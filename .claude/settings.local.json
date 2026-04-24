@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@15 . --typescript --tailwind --app --src-dir --import-alias \"@/*\" --no-turbopack --use-npm --no-eslint)",
+      "Bash(npx create-next-app@15 . --typescript --tailwind --app --src-dir --import-alias \"@/*\" --no-turbopack --use-npm --no-eslint --yes)",
+      "Read(//c/dev/**)",
+      "Bash(npx create-next-app@15 tulpiaan-tmp --typescript --tailwind --app --src-dir --import-alias \"@/*\" --no-turbopack --use-npm --no-eslint)",
+      "Bash(cp *)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init --defaults)",
+      "Bash(npx shadcn@latest add button card dialog dropdown-menu input label select textarea tabs badge avatar --overwrite)",
+      "Bash(git init *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
