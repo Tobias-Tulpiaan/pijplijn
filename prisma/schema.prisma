@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  name            String
+  passwordHash    String
+  createdAt       DateTime       @default(now())
+  ownedCandidates Candidate[]    @relation("CandidateOwner")
+  tasks           Task[]
+  stageChanges    StageHistory[]
+}
+
+model Candidate {
+  id           String         @id @default(cuid())
+  name         String
+  role         String
+  companyId    String?
+  company      Company?       @relation(fields: [companyId], references: [id])
+  ownerId      String
+  owner        User           @relation("CandidateOwner", fields: [ownerId], references: [id])
+  phone        String?
+  email        String?
+  linkedinUrl  String?
+  lastContact  DateTime?
+  stage        Int            @default(10)
+  notes        String?        @db.Text
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  tasks        Task[]
+  stageHistory StageHistory[]
+}
+
+model Company {
+  id            String      @id @default(cuid())
+  name          String      @unique
+  contactPerson String?
+  contactEmail  String?
+  contactPhone  String?
+  candidates    Candidate[]
+  createdAt     DateTime    @default(now())
+}
+
+model Task {
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  dueDate      DateTime?
+  completed    Boolean   @default(false)
+  candidateId  String
+  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  assignedToId String
+  assignedTo   User      @relation(fields: [assignedToId], references: [id])
+  createdAt    DateTime  @default(now())
+}
+
+model StageHistory {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  fromStage   Int
+  toStage     Int
+  changedById String
+  changedBy   User      @relation(fields: [changedById], references: [id])
+  changedAt   DateTime  @default(now())
+  note        String?
+}
