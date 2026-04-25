@@ -12,16 +12,28 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params
     const body = await request.json()
 
+    if (body.dueTime && !/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(body.dueTime)) {
+      return NextResponse.json({ error: 'Ongeldige tijd (gebruik HH:MM)' }, { status: 400 })
+    }
+
+    const shared = body.isShared === true
+
     const task = await prisma.task.update({
       where: { id },
       data: {
         ...(body.title !== undefined && { title: body.title }),
         ...(body.description !== undefined && { description: body.description }),
         ...(body.dueDate !== undefined && { dueDate: body.dueDate ? new Date(body.dueDate) : null }),
+        ...(body.dueTime !== undefined && { dueTime: body.dueTime?.trim() || null }),
         ...(body.completed !== undefined && { completed: body.completed }),
-        ...(body.assignedToId !== undefined && { assignedToId: body.assignedToId }),
+        ...(body.isShared !== undefined && { isShared: shared }),
+        ...(body.candidateId !== undefined && { candidateId: body.candidateId || null }),
+        ...(body.assignedToId !== undefined && { assignedToId: shared ? null : (body.assignedToId || null) }),
       },
-      include: { assignedTo: { select: { id: true, name: true } } },
+      include: {
+        assignedTo: { select: { id: true, name: true } },
+        candidate: { select: { id: true, name: true, company: { select: { name: true } } } },
+      },
     })
 
     return NextResponse.json(task)

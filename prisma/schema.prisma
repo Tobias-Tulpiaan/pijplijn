@@ -108,16 +108,18 @@ model Vacature {
 }
 
 model Task {
-  id           String    @id @default(cuid())
+  id           String     @id @default(cuid())
   title        String
   description  String?
   dueDate      DateTime?
-  completed    Boolean   @default(false)
-  candidateId  String
-  candidate    Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
-  assignedToId String
-  assignedTo   User      @relation(fields: [assignedToId], references: [id])
-  createdAt    DateTime  @default(now())
+  dueTime      String?
+  completed    Boolean    @default(false)
+  isShared     Boolean    @default(false)
+  candidateId  String?
+  candidate    Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  assignedToId String?
+  assignedTo   User?      @relation(fields: [assignedToId], references: [id])
+  createdAt    DateTime   @default(now())
 }
 
 model StageHistory {

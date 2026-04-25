@@ -10,21 +10,27 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { title, description, dueDate, candidateId, assignedToId } = body
+    const { title, description, dueDate, dueTime, candidateId, assignedToId, isShared } = body
 
     if (!title?.trim()) return NextResponse.json({ error: 'Titel is verplicht' }, { status: 400 })
-    if (!candidateId) return NextResponse.json({ error: 'Kandidaat is verplicht' }, { status: 400 })
-    if (!assignedToId) return NextResponse.json({ error: 'Toegewezen aan is verplicht' }, { status: 400 })
+    if (dueTime && !/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(dueTime)) {
+      return NextResponse.json({ error: 'Ongeldige tijd (gebruik HH:MM)' }, { status: 400 })
+    }
 
     const task = await prisma.task.create({
       data: {
         title: title.trim(),
         description: description?.trim() || null,
         dueDate: dueDate ? new Date(dueDate) : null,
-        candidateId,
-        assignedToId,
+        dueTime: dueTime?.trim() || null,
+        isShared: isShared === true,
+        candidateId: candidateId || null,
+        assignedToId: isShared ? null : (assignedToId || session.user.id),
       },
-      include: { assignedTo: { select: { id: true, name: true } } },
+      include: {
+        assignedTo: { select: { id: true, name: true } },
+        candidate: { select: { id: true, name: true, company: { select: { name: true } } } },
+      },
     })
 
     return NextResponse.json(task, { status: 201 })

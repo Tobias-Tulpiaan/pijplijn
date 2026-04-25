@@ -4,27 +4,29 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
-import { Pencil, X, Check } from 'lucide-react'
+import { Pencil, X, Check, Users } from 'lucide-react'
 import Link from 'next/link'
+import { BewerkTaakDialog } from './BewerkTaakDialog'
 
 interface Task {
   id: string
   title: string
   dueDate: Date | null
+  dueTime: string | null
   completed: boolean
-  candidateId: string
-  assignedToId: string
-  candidate: { id: string; name: string; company: { name: string } | null }
-  assignedTo: { id: string; name: string }
+  isShared: boolean
+  candidateId: string | null
+  assignedToId: string | null
+  candidate: { id: string; name: string; company: { name: string } | null } | null
+  assignedTo: { id: string; name: string } | null
 }
 
-type Variant = 'verlopen' | 'vandaag' | 'week' | 'volgend' | 'later' | 'geen'
+type Variant = 'verlopen' | 'vandaag' | 'morgen' | 'week' | 'later' | 'geen'
 
 interface Props {
-  label: string
   variant: Variant
-  tasks: Task[]
-  users: { id: string; name: string }[]
+  tasks:   Task[]
+  users:   { id: string; name: string }[]
 }
 
 const variantStyles: Record<Variant, {
@@ -45,16 +47,16 @@ const variantStyles: Record<Variant, {
     badge: { backgroundColor: '#CBAD74', color: '#1A1A1A' },
     row: { backgroundColor: '#fff', border: '1px solid #e5e7eb' },
   },
+  morgen: {
+    header: { backgroundColor: 'rgba(203,173,116,0.08)', borderLeft: '4px solid #A68A52' },
+    headerText: { color: '#A68A52' },
+    badge: { backgroundColor: '#A68A52', color: '#fff' },
+    row: { backgroundColor: '#fff', border: '1px solid #e5e7eb' },
+  },
   week: {
     header: { borderLeft: '4px solid #1A1A1A' },
     headerText: { color: '#1A1A1A' },
     badge: { backgroundColor: '#1A1A1A', color: '#fff' },
-    row: { backgroundColor: '#fff', border: '1px solid #e5e7eb' },
-  },
-  volgend: {
-    header: { borderLeft: '4px solid #6B6B6B' },
-    headerText: { color: '#6B6B6B' },
-    badge: { backgroundColor: '#6B6B6B', color: '#fff' },
     row: { backgroundColor: '#fff', border: '1px solid #e5e7eb' },
   },
   later: {
@@ -71,14 +73,19 @@ const variantStyles: Record<Variant, {
   },
 }
 
-export function TakenGroep({ label, variant, tasks, users }: Props) {
+export function TakenGroep({ variant, tasks, users }: Props) {
   const router = useRouter()
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editDate, setEditDate] = useState('')
+
+  const [editingId,    setEditingId]    = useState<string | null>(null)
+  const [editTitle,    setEditTitle]    = useState('')
+  const [editDate,     setEditDate]     = useState('')
+  const [editTime,     setEditTime]     = useState('')
+  const [showEditTime, setShowEditTime] = useState(false)
+  const [editIsShared, setEditIsShared] = useState(false)
   const [editAssignee, setEditAssignee] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [topError, setTopError] = useState('')
+  const [saving,       setSaving]       = useState(false)
+  const [topError,     setTopError]     = useState('')
+  const [bewerkTask,   setBewerkTask]   = useState<Task | null>(null)
 
   const s = variantStyles[variant]
 
@@ -88,12 +95,13 @@ export function TakenGroep({ label, variant, tasks, users }: Props) {
     setEditingId(task.id)
     setEditTitle(task.title)
     setEditDate(task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : '')
-    setEditAssignee(task.assignedToId)
+    setEditTime(task.dueTime ?? '')
+    setShowEditTime(!!task.dueTime)
+    setEditIsShared(task.isShared)
+    setEditAssignee(task.assignedToId ?? '')
   }
 
-  function cancelEdit() {
-    setEditingId(null)
-  }
+  function cancelEdit() { setEditingId(null) }
 
   async function saveEdit(task: Task) {
     setSaving(true)
@@ -104,7 +112,9 @@ export function TakenGroep({ label, variant, tasks, users }: Props) {
         body: JSON.stringify({
           title: editTitle.trim() || task.title,
           dueDate: editDate || null,
-          assignedToId: editAssignee || task.assignedToId,
+          dueTime: showEditTime ? (editTime.trim() || null) : null,
+          isShared: editIsShared,
+          assignedToId: editIsShared ? null : (editAssignee || task.assignedToId),
         }),
       })
       if (!res.ok) {
@@ -123,19 +133,6 @@ export function TakenGroep({ label, variant, tasks, users }: Props) {
 
   return (
     <div>
-      {/* Groep header */}
-      <div
-        className="flex items-center gap-2 px-3 py-2 rounded-lg mb-2"
-        style={s.header}
-      >
-        <span
-          className="px-2.5 py-0.5 rounded-full text-xs font-bold"
-          style={s.badge}
-        >
-          {label} ({tasks.length})
-        </span>
-      </div>
-
       {topError && (
         <div className="mb-2 px-3 py-2 rounded text-xs border" style={{ backgroundColor: '#fef2f2', color: '#991b1b', borderColor: '#fecaca' }}>
           {topError}
@@ -145,6 +142,7 @@ export function TakenGroep({ label, variant, tasks, users }: Props) {
       <div className="space-y-1.5">
         {tasks.map((task) => {
           const isEditing = editingId === task.id
+          const isGeneral = !task.candidateId
 
           if (isEditing) {
             return (
@@ -162,35 +160,66 @@ export function TakenGroep({ label, variant, tasks, users }: Props) {
                   disabled={saving}
                   autoFocus
                 />
-                <div className="flex gap-2 items-center">
+                <div className="flex gap-2 items-center flex-wrap">
                   <input
                     type="date"
                     value={editDate}
                     onChange={(e) => setEditDate(e.target.value)}
-                    className="flex-1 px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
+                    className="px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
                     disabled={saving}
                   />
-                  <select
-                    value={editAssignee}
-                    onChange={(e) => setEditAssignee(e.target.value)}
-                    className="flex-1 px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
-                    disabled={saving}
-                  >
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
-                  </select>
+                  {showEditTime ? (
+                    <div className="flex gap-1 items-center">
+                      <input
+                        type="time"
+                        value={editTime}
+                        onChange={(e) => setEditTime(e.target.value)}
+                        className="px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
+                        disabled={saving}
+                      />
+                      <button type="button" onClick={() => { setShowEditTime(false); setEditTime('') }}
+                        className="text-gray-400 hover:text-gray-600 flex-shrink-0" title="Tijd verwijderen">
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => setShowEditTime(true)}
+                      className="text-xs hover:underline flex-shrink-0" style={{ color: '#9ca3af' }}>
+                      + Tijd
+                    </button>
+                  )}
+                  <label className="flex items-center gap-1 text-xs flex-shrink-0 cursor-pointer" title="Gedeelde taak">
+                    <input
+                      type="checkbox"
+                      checked={editIsShared}
+                      onChange={(e) => setEditIsShared(e.target.checked)}
+                      disabled={saving}
+                    />
+                    <Users size={12} style={{ color: editIsShared ? '#A68A52' : '#9ca3af' }} />
+                  </label>
+                  {!editIsShared && (
+                    <select
+                      value={editAssignee}
+                      onChange={(e) => setEditAssignee(e.target.value)}
+                      className="px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
+                      disabled={saving}
+                    >
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                  )}
                   <button
                     onClick={() => saveEdit(task)}
                     disabled={saving}
-                    className="p-1.5 rounded"
+                    className="p-1.5 rounded flex-shrink-0"
                     style={{ backgroundColor: '#CBAD74', color: '#1A1A1A' }}
                   >
                     <Check size={13} />
                   </button>
                   <button
                     onClick={cancelEdit}
-                    className="p-1.5 rounded hover:bg-gray-100"
+                    className="p-1.5 rounded hover:bg-gray-100 flex-shrink-0"
                     style={{ color: '#6B6B6B' }}
                   >
                     <X size={13} />
@@ -200,36 +229,69 @@ export function TakenGroep({ label, variant, tasks, users }: Props) {
             )
           }
 
+          const contentArea = (
+            <>
+              <p className="text-sm font-medium flex items-center gap-1.5" style={{ color: '#1A1A1A' }}>
+                {task.title}
+                {task.isShared && <Users size={13} style={{ color: '#A68A52', flexShrink: 0 }} />}
+              </p>
+              <p className="text-xs mt-0.5">
+                {task.candidate ? (
+                  <>
+                    <span style={{ color: '#A68A52' }}>{task.candidate.name}</span>
+                    {task.candidate.company && (
+                      <span style={{ color: '#6B6B6B' }}> · {task.candidate.company.name}</span>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ color: '#9ca3af' }}>Algemene taak</span>
+                )}
+              </p>
+            </>
+          )
+
           return (
             <div
               key={task.id}
               className="group flex items-start justify-between gap-4 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
               style={s.row}
             >
-              <Link
-                href={`/kandidaat/${task.candidateId}#takensectie`}
-                className="flex-1 min-w-0"
-              >
-                <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>{task.title}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#A68A52' }}>
-                  {task.candidate.name}
-                  {task.candidate.company && (
-                    <span style={{ color: '#6B6B6B' }}> · {task.candidate.company.name}</span>
-                  )}
-                </p>
-              </Link>
+              {isGeneral ? (
+                <div
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => setBewerkTask(task)}
+                >
+                  {contentArea}
+                </div>
+              ) : (
+                <Link
+                  href={`/kandidaat/${task.candidateId}#takensectie`}
+                  className="flex-1 min-w-0"
+                >
+                  {contentArea}
+                </Link>
+              )}
 
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="text-right">
                   {task.dueDate && (
                     <p className="text-xs" style={{ color: '#6B6B6B' }}>
                       {format(new Date(task.dueDate), 'd MMM yyyy', { locale: nl })}
+                      {' · '}
+                      {task.dueTime
+                        ? task.dueTime
+                        : <span style={{ color: '#9ca3af' }}>hele dag</span>
+                      }
                     </p>
                   )}
-                  <p className="text-xs" style={{ color: '#A68A52' }}>{task.assignedTo.name}</p>
+                  {task.isShared ? (
+                    <p className="text-xs" style={{ color: '#A68A52' }}>Gedeeld</p>
+                  ) : (
+                    <p className="text-xs" style={{ color: '#A68A52' }}>{task.assignedTo?.name ?? '—'}</p>
+                  )}
                 </div>
                 <button
-                  onClick={() => startEdit(task)}
+                  onClick={() => isGeneral ? setBewerkTask(task) : startEdit(task)}
                   className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-gray-100 transition-opacity"
                   style={{ color: '#A68A52' }}
                   title="Bewerken"
@@ -241,6 +303,12 @@ export function TakenGroep({ label, variant, tasks, users }: Props) {
           )
         })}
       </div>
+
+      <BewerkTaakDialog
+        task={bewerkTask}
+        onClose={() => { setBewerkTask(null); router.refresh() }}
+        users={users}
+      />
     </div>
   )
 }

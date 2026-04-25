@@ -43,7 +43,12 @@
       "Bash(git rm *)",
       "PowerShell($env:DATABASE_URL = \"postgresql://neondb_owner:npg_kMbvSO52meZV@ep-purple-salad-aloylzbi-pooler.c-3.eu-central-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require\"; npx prisma migrate deploy)",
       "PowerShell($env:DATABASE_URL = \"postgresql://neondb_owner:npg_kMbvSO52meZV@ep-purple-salad-aloylzbi-pooler.c-3.eu-central-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require\"; npx prisma db seed)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "PowerShell($env:DATABASE_URL = \"postgresql://neondb_owner:npg_kMbvSO52meZV@ep-purple-salad-aloylzbi-pooler.c-3.eu-central-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require\"; npx prisma migrate deploy; npx tsx src/scripts/migrate-contacts.ts)",
+      "Bash(npx next *)",
+      "PowerShell(git add *)",
+      "PowerShell(git push *)",
+      "PowerShell(Stop-Process *)"
     ]
   }
 }

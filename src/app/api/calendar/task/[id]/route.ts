@@ -23,12 +23,17 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const now = new Date()
   const start = task.dueDate ? new Date(task.dueDate) : now
-  start.setUTCHours(9, 0, 0, 0)
+  if (task.dueTime) {
+    const [h, m] = task.dueTime.split(':').map(Number)
+    start.setHours(h, m, 0, 0)
+  } else {
+    start.setUTCHours(9, 0, 0, 0)
+  }
   const end = new Date(start.getTime() + 60 * 60 * 1000)
 
-  const companyName = task.candidate.company?.name ?? ''
+  const companyName = task.candidate?.company?.name ?? ''
   const description = [
-    `Kandidaat: ${task.candidate.name}`,
+    task.candidate ? `Kandidaat: ${task.candidate.name}` : '',
     companyName ? `Opdrachtgever: ${companyName}` : '',
     task.description ?? '',
   ].filter(Boolean).join('\\n')

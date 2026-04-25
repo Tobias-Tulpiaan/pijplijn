@@ -4,16 +4,17 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, isToday, isPast, formatDistanceToNow } from 'date-fns'
 import { nl } from 'date-fns/locale'
-import { Trash2, Plus, X, Download, Pencil, Check } from 'lucide-react'
+import { Trash2, Plus, X, Download, Pencil, Check, Clock } from 'lucide-react'
 
 interface Task {
   id: string
   title: string
   description?: string | null
   dueDate?: Date | string | null
+  dueTime?: string | null
   completed: boolean
-  assignedToId: string
-  assignedTo: { id: string; name: string }
+  assignedToId: string | null
+  assignedTo: { id: string; name: string } | null
 }
 
 interface Props {
@@ -44,36 +45,45 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
   const [topError, setTopError] = useState('')
 
   // Inline edit state
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editDate, setEditDate] = useState('')
+  const [editingId, setEditingId]       = useState<string | null>(null)
+  const [editTitle, setEditTitle]       = useState('')
+  const [editDate, setEditDate]         = useState('')
+  const [editTime, setEditTime]         = useState('')
+  const [showEditTime, setShowEditTime] = useState(false)
   const [editAssignee, setEditAssignee] = useState('')
-  const [editSaving, setEditSaving] = useState(false)
+  const [editSaving, setEditSaving]     = useState(false)
 
   // New task form state
-  const [newTitle, setNewTitle] = useState('')
-  const [newDate, setNewDate] = useState('')
+  const [newTitle, setNewTitle]       = useState('')
+  const [newDate, setNewDate]         = useState('')
+  const [showTime, setShowTime]       = useState(false)
+  const [newTime, setNewTime]         = useState('')
   const [newAssignee, setNewAssignee] = useState(currentUserId)
 
   function startEdit(task: Task) {
     setEditingId(task.id)
     setEditTitle(task.title)
     setEditDate(task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : '')
-    setEditAssignee(task.assignedToId)
+    setEditTime(task.dueTime ?? '')
+    setShowEditTime(!!task.dueTime)
+    setEditAssignee(task.assignedToId ?? '')
   }
 
-  function cancelEdit() {
-    setEditingId(null)
-  }
+  function cancelEdit() { setEditingId(null) }
 
   async function saveEdit(task: Task) {
     setEditSaving(true)
     const previousTasks = tasks
-    // Optimistic update
+    const resolvedTime = showEditTime ? (editTime.trim() || null) : null
     setTasks((prev) => prev.map((t) =>
       t.id === task.id
-        ? { ...t, title: editTitle.trim() || t.title, dueDate: editDate || null, assignedToId: editAssignee,
-            assignedTo: users.find((u) => u.id === editAssignee) ?? t.assignedTo }
+        ? { ...t,
+            title:       editTitle.trim() || t.title,
+            dueDate:     editDate || null,
+            dueTime:     resolvedTime,
+            assignedToId: editAssignee,
+            assignedTo:  users.find((u) => u.id === editAssignee) ?? t.assignedTo,
+          }
         : t
     ))
     setEditingId(null)
@@ -82,8 +92,9 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: editTitle.trim() || task.title,
-          dueDate: editDate || null,
+          title:       editTitle.trim() || task.title,
+          dueDate:     editDate || null,
+          dueTime:     resolvedTime,
           assignedToId: editAssignee || task.assignedToId,
         }),
       })
@@ -137,8 +148,9 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: newTitle.trim(),
-          dueDate: newDate || null,
+          title:       newTitle.trim(),
+          dueDate:     newDate || null,
+          dueTime:     showTime ? (newTime.trim() || null) : null,
           candidateId,
           assignedToId: newAssignee,
         }),
@@ -149,8 +161,7 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
       }
       const created = await res.json()
       setTasks((prev) => [created, ...prev])
-      setNewTitle('')
-      setNewDate('')
+      setNewTitle(''); setNewDate(''); setNewTime(''); setShowTime(false)
       setNewAssignee(currentUserId)
       setShowForm(false)
       router.refresh()
@@ -178,11 +189,8 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
 
         if (isEditing) {
           return (
-            <div
-              key={task.id}
-              className="rounded-md p-2.5"
-              style={{ backgroundColor: '#fafafa', border: '1px solid #CBAD74' }}
-            >
+            <div key={task.id} className="rounded-md p-2.5"
+              style={{ backgroundColor: '#fafafa', border: '1px solid #CBAD74' }}>
               <input
                 type="text"
                 value={editTitle}
@@ -192,39 +200,53 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
                 disabled={editSaving}
                 autoFocus
               />
-              <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center flex-wrap mb-1.5">
                 <input
                   type="date"
                   value={editDate}
                   onChange={(e) => setEditDate(e.target.value)}
-                  className="flex-1 px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
+                  className="flex-1 min-w-[120px] px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
                   disabled={editSaving}
                 />
+                {showEditTime ? (
+                  <div className="flex gap-1 items-center flex-1 min-w-[100px]">
+                    <input
+                      type="time"
+                      value={editTime}
+                      onChange={(e) => setEditTime(e.target.value)}
+                      className="flex-1 px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
+                      disabled={editSaving}
+                    />
+                    <button type="button" onClick={() => { setShowEditTime(false); setEditTime('') }}
+                      className="text-gray-400 hover:text-gray-600 flex-shrink-0" title="Tijd verwijderen">
+                      <X size={13} />
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setShowEditTime(true)}
+                    className="flex items-center gap-1 text-xs hover:underline flex-shrink-0"
+                    style={{ color: '#9ca3af' }}>
+                    <Clock size={11} /> Tijd toevoegen
+                  </button>
+                )}
                 <select
                   value={editAssignee}
                   onChange={(e) => setEditAssignee(e.target.value)}
-                  className="flex-1 px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
+                  className="flex-1 min-w-[100px] px-2 py-1 text-xs rounded border border-gray-200 outline-none focus:border-[#CBAD74]"
                   disabled={editSaving}
                 >
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
-                <button
-                  onClick={() => saveEdit(task)}
-                  disabled={editSaving}
-                  className="p-1.5 rounded"
-                  style={{ backgroundColor: '#CBAD74', color: '#1A1A1A' }}
-                  title="Opslaan"
-                >
+                <button onClick={() => saveEdit(task)} disabled={editSaving}
+                  className="p-1.5 rounded flex-shrink-0"
+                  style={{ backgroundColor: '#CBAD74', color: '#1A1A1A' }} title="Opslaan">
                   <Check size={13} />
                 </button>
-                <button
-                  onClick={cancelEdit}
-                  className="p-1.5 rounded hover:bg-gray-100"
-                  style={{ color: '#6B6B6B' }}
-                  title="Annuleren"
-                >
+                <button onClick={cancelEdit}
+                  className="p-1.5 rounded hover:bg-gray-100 flex-shrink-0"
+                  style={{ color: '#6B6B6B' }} title="Annuleren">
                   <X size={13} />
                 </button>
               </div>
@@ -233,17 +255,15 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
         }
 
         return (
-          <div
-            key={task.id}
+          <div key={task.id}
             className="group flex items-start gap-3 rounded-md p-2.5"
-            style={taskRowStyle(task)}
-          >
+            style={taskRowStyle(task)}>
             {/* Checkbox */}
             <button
               onClick={() => toggleCompleted(task)}
               className="w-4 h-4 rounded-full mt-0.5 flex-shrink-0 border-2 transition-colors"
               style={{
-                borderColor: task.completed ? '#CBAD74' : '#d1d5db',
+                borderColor:     task.completed ? '#CBAD74' : '#d1d5db',
                 backgroundColor: task.completed ? '#CBAD74' : 'transparent',
               }}
               aria-label={task.completed ? 'Markeer onvoltooid' : 'Markeer voltooid'}
@@ -251,70 +271,60 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <p
-                className="text-sm"
+              <p className="text-sm"
                 style={{
-                  color: task.completed ? '#6B6B6B' : '#1A1A1A',
-                  textDecoration: task.completed ? 'line-through' : undefined,
-                }}
-              >
+                  color:           task.completed ? '#6B6B6B' : '#1A1A1A',
+                  textDecoration:  task.completed ? 'line-through' : undefined,
+                }}>
                 {task.title}
               </p>
               <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                 {task.dueDate && (
                   <span className="text-xs" style={{ color: '#6B6B6B' }}>
                     {format(new Date(task.dueDate), 'd MMM yyyy', { locale: nl })}
+                    {' · '}
+                    {task.dueTime
+                      ? <span>{task.dueTime}</span>
+                      : <span style={{ color: '#9ca3af' }}>hele dag</span>
+                    }
                     {!task.completed && (
-                      <span
-                        className="ml-1"
-                        style={{ color: isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate)) ? '#ef4444' : '#A68A52' }}
-                      >
+                      <span className="ml-1.5"
+                        style={{ color: isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate)) ? '#ef4444' : '#A68A52' }}>
                         ({formatDistanceToNow(new Date(task.dueDate), { addSuffix: true, locale: nl })})
                       </span>
                     )}
                   </span>
                 )}
-                <span className="flex items-center gap-1 text-xs" style={{ color: '#A68A52' }}>
-                  <span
-                    className="w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: '#CBAD74', color: '#1A1A1A' }}
-                  >
-                    {initialen(task.assignedTo.name)}
+                {task.assignedTo && (
+                  <span className="flex items-center gap-1 text-xs" style={{ color: '#A68A52' }}>
+                    <span className="w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: '#CBAD74', color: '#1A1A1A' }}>
+                      {initialen(task.assignedTo.name)}
+                    </span>
+                    {task.assignedTo.name}
                   </span>
-                  {task.assignedTo.name}
-                </span>
+                )}
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-1 flex-shrink-0">
-              <button
-                onClick={() => startEdit(task)}
+              <button onClick={() => startEdit(task)}
                 className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity hover:bg-gray-100"
-                style={{ color: '#A68A52' }}
-                title="Bewerken"
-              >
+                style={{ color: '#A68A52' }} title="Bewerken">
                 <Pencil size={13} />
               </button>
               {task.dueDate && (
-                <a
-                  href={`/api/calendar/task/${task.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={`/api/calendar/task/${task.id}`}
+                  target="_blank" rel="noopener noreferrer"
                   className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors hover:bg-gray-100"
-                  style={{ color: '#A68A52' }}
-                  title="Toevoegen aan Outlook"
-                >
-                  <Download size={12} />
-                  Outlook
+                  style={{ color: '#A68A52' }} title="Toevoegen aan Outlook">
+                  <Download size={12} />Outlook
                 </a>
               )}
-              <button
-                onClick={() => deleteTask(task.id)}
+              <button onClick={() => deleteTask(task.id)}
                 className="p-1 rounded transition-colors hover:bg-red-50"
-                style={{ color: '#9ca3af' }}
-                aria-label="Verwijder taak"
-              >
+                style={{ color: '#9ca3af' }} aria-label="Verwijder taak">
                 <Trash2 size={13} />
               </button>
             </div>
@@ -324,9 +334,12 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
 
       {/* New task form */}
       {showForm ? (
-        <form onSubmit={handleAddTask} className="rounded-md border border-gray-200 p-3 space-y-3 mt-2" style={{ backgroundColor: '#fafafa' }}>
+        <form onSubmit={handleAddTask}
+          className="rounded-md border border-gray-200 p-3 space-y-2 mt-2"
+          style={{ backgroundColor: '#fafafa' }}>
           {formError && (
-            <div className="px-3 py-2 rounded text-xs border" style={{ backgroundColor: '#fef2f2', color: '#991b1b', borderColor: '#fecaca' }}>
+            <div className="px-3 py-2 rounded text-xs border"
+              style={{ backgroundColor: '#fef2f2', color: '#991b1b', borderColor: '#fecaca' }}>
               {formError}
             </div>
           )}
@@ -338,51 +351,63 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
             required
             className="w-full px-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <input
               type="date"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+              className="flex-1 min-w-[130px] px-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
             />
             <select
               value={newAssignee}
               onChange={(e) => setNewAssignee(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+              className="flex-1 min-w-[130px] px-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
             >
               {users.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
           </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={() => { setShowForm(false); setFormError('') }}
-              className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-200 hover:bg-gray-100"
-              style={{ color: '#6B6B6B' }}
-            >
-              <X size={13} />
-              Annuleer
+          {showTime ? (
+            <div className="flex gap-2 items-center">
+              <input
+                type="time"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                className="flex-1 px-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+              />
+              <button type="button" onClick={() => { setShowTime(false); setNewTime('') }}
+                className="flex items-center gap-1 text-xs hover:underline flex-shrink-0"
+                style={{ color: '#9ca3af' }}>
+                <X size={13} /> Tijd verwijderen
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setShowTime(true)}
+              className="flex items-center gap-1 text-xs hover:underline"
+              style={{ color: '#9ca3af' }}>
+              <Clock size={11} /> Tijd toevoegen
             </button>
-            <button
-              type="submit"
-              disabled={formLoading}
+          )}
+          <div className="flex gap-2 justify-end">
+            <button type="button"
+              onClick={() => { setShowForm(false); setFormError(''); setShowTime(false); setNewTime('') }}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md border border-gray-200 hover:bg-gray-100"
+              style={{ color: '#6B6B6B' }}>
+              <X size={13} /> Annuleer
+            </button>
+            <button type="submit" disabled={formLoading}
               className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-md font-medium"
-              style={{ backgroundColor: formLoading ? '#e5e7eb' : '#CBAD74', color: '#1A1A1A' }}
-            >
+              style={{ backgroundColor: formLoading ? '#e5e7eb' : '#CBAD74', color: '#1A1A1A' }}>
               {formLoading ? 'Opslaan…' : 'Toevoegen'}
             </button>
           </div>
         </form>
       ) : (
-        <button
-          onClick={() => setShowForm(true)}
+        <button onClick={() => setShowForm(true)}
           className="flex items-center gap-1.5 text-sm mt-1 hover:underline"
-          style={{ color: '#A68A52' }}
-        >
-          <Plus size={14} />
-          Taak toevoegen
+          style={{ color: '#A68A52' }}>
+          <Plus size={14} /> Taak toevoegen
         </button>
       )}
     </div>
