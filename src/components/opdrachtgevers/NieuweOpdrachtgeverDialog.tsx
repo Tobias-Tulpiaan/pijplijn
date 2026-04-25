@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { encodeCompanyName } from '@/lib/companyCode'
 
 export function NieuweOpdrachtgeverDialog() {
   const router = useRouter()
@@ -15,12 +16,13 @@ export function NieuweOpdrachtgeverDialog() {
   const [error, setError] = useState('')
 
   const [naam, setNaam] = useState('')
+  const [customCode, setCustomCode] = useState('')
   const [contactPersoon, setContactPersoon] = useState('')
   const [contactEmail, setContactEmail] = useState('')
   const [contactTelefoon, setContactTelefoon] = useState('')
 
   function reset() {
-    setNaam(''); setContactPersoon(''); setContactEmail(''); setContactTelefoon(''); setError('')
+    setNaam(''); setCustomCode(''); setContactPersoon(''); setContactEmail(''); setContactTelefoon(''); setError('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -33,6 +35,7 @@ export function NieuweOpdrachtgeverDialog() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: naam.trim(),
+          customCode: customCode.trim() || null,
           contactPerson: contactPersoon.trim() || null,
           contactEmail: contactEmail.trim() || null,
           contactPhone: contactTelefoon.trim() || null,
@@ -80,6 +83,18 @@ export function NieuweOpdrachtgeverDialog() {
             <div className="space-y-1.5">
               <Label htmlFor="o-naam">Bedrijfsnaam *</Label>
               <Input id="o-naam" value={naam} onChange={(e) => setNaam(e.target.value)} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="o-code">Code voor pijplijn-weergave (optioneel)</Label>
+              <Input
+                id="o-code"
+                value={customCode}
+                onChange={(e) => setCustomCode(e.target.value)}
+                placeholder={encodeCompanyName(naam) || 'Automatisch berekend'}
+              />
+              <p className="text-xs" style={{ color: '#6B6B6B' }}>
+                Laat leeg voor automatische code op basis van bedrijfsnaam
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="o-contact">Contactpersoon</Label>

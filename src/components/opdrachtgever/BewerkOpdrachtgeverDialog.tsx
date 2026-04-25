@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Pencil, Trash2 } from 'lucide-react'
+import { encodeCompanyName } from '@/lib/companyCode'
 
 interface Company {
   id: string
   name: string
+  customCode: string | null
   contactPerson: string | null
   contactEmail: string | null
   contactPhone: string | null
@@ -24,6 +26,7 @@ export function BewerkOpdrachtgeverDialog({ company }: { company: Company }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const [naam, setNaam] = useState(company.name)
+  const [customCode, setCustomCode] = useState(company.customCode ?? '')
   const [contactPersoon, setContactPersoon] = useState(company.contactPerson ?? '')
   const [contactEmail, setContactEmail] = useState(company.contactEmail ?? '')
   const [contactTelefoon, setContactTelefoon] = useState(company.contactPhone ?? '')
@@ -32,6 +35,7 @@ export function BewerkOpdrachtgeverDialog({ company }: { company: Company }) {
     setError('')
     setConfirmDelete(false)
     setNaam(company.name)
+    setCustomCode(company.customCode ?? '')
     setContactPersoon(company.contactPerson ?? '')
     setContactEmail(company.contactEmail ?? '')
     setContactTelefoon(company.contactPhone ?? '')
@@ -47,6 +51,7 @@ export function BewerkOpdrachtgeverDialog({ company }: { company: Company }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: naam.trim(),
+          customCode: customCode.trim() || null,
           contactPerson: contactPersoon.trim() || null,
           contactEmail: contactEmail.trim() || null,
           contactPhone: contactTelefoon.trim() || null,
@@ -132,6 +137,18 @@ export function BewerkOpdrachtgeverDialog({ company }: { company: Company }) {
               <div className="space-y-1.5">
                 <Label htmlFor="bo-naam">Bedrijfsnaam *</Label>
                 <Input id="bo-naam" value={naam} onChange={(e) => setNaam(e.target.value)} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="bo-code">Code voor pijplijn-weergave (optioneel)</Label>
+                <Input
+                  id="bo-code"
+                  value={customCode}
+                  onChange={(e) => setCustomCode(e.target.value)}
+                  placeholder={encodeCompanyName(naam) || 'Automatisch berekend'}
+                />
+                <p className="text-xs" style={{ color: '#6B6B6B' }}>
+                  Laat leeg voor automatische code op basis van bedrijfsnaam
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="bo-contact">Contactpersoon</Label>

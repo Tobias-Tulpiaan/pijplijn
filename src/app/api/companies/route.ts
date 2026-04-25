@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { name, contactPerson, contactEmail, contactPhone } = body
+    const { name, customCode, contactPerson, contactEmail, contactPhone } = body
 
     if (!name?.trim()) return NextResponse.json({ error: 'Naam is verplicht' }, { status: 400 })
 
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       update: {},
       create: {
         name: name.trim(),
+        customCode: customCode?.trim() || null,
         contactPerson: contactPerson?.trim() || null,
         contactEmail: contactEmail?.trim() || null,
         contactPhone: contactPhone?.trim() || null,

@@ -10,6 +10,7 @@ import { BewerkOpdrachtgeverDialog } from '@/components/opdrachtgever/BewerkOpdr
 import { ContactenLijst } from '@/components/opdrachtgever/ContactenLijst'
 import { NieuweVacatureDialog } from '@/components/vacature/NieuweVacatureDialog'
 import { VACATURE_STATUS } from '@/types'
+import { getCompanyCode } from '@/lib/companyCode'
 
 type Params = Promise<{ id: string }>
 
@@ -71,6 +72,10 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
           <BewerkOpdrachtgeverDialog company={company} />
         </div>
         <div className="space-y-1">
+          <p className="text-xs" style={{ color: '#9ca3af' }}>
+            Pijplijn code:{' '}
+            <span className="font-medium" style={{ color: '#6B6B6B' }}>{getCompanyCode(company)}</span>
+          </p>
           {company.contactPerson && (
             <p className="text-sm" style={{ color: '#6B6B6B' }}>
               Primair contact: <span style={{ color: '#1A1A1A' }}>{company.contactPerson}</span>

@@ -17,6 +17,7 @@ import { VerwijderArchiefDialog } from '@/components/kandidaat/VerwijderArchiefD
 import { DatumsAanpassenDialog } from '@/components/kandidaat/DatumsAanpassenDialog'
 import { getSetting } from '@/lib/settings'
 import { VACATURE_STATUS } from '@/types'
+import { getCompanyCode } from '@/lib/companyCode'
 
 type Params = Promise<{ id: string }>
 
@@ -262,6 +263,9 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
                   <Building2 size={14} style={{ color: '#CBAD74' }} />
                   <Link href={`/opdrachtgevers/${candidate.company.id}`} className="text-sm font-medium hover:underline" style={{ color: '#A68A52' }}>
                     {candidate.company.name}
+                    <span className="font-normal text-xs ml-1.5" style={{ color: '#6B6B6B' }}>
+                      ({getCompanyCode(candidate.company)})
+                    </span>
                   </Link>
                 </div>
                 {candidate.company.contactPerson && (

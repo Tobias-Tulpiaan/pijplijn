@@ -8,6 +8,7 @@ import { ArrowRightCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import type { CandidateWithRelations } from '@/types'
+import { getCompanyCode } from '@/lib/companyCode'
 import { VerplaatsStageSheet } from './VerplaatsStageSheet'
 
 function initialen(name: string): string {
@@ -72,7 +73,7 @@ export function KandidaatKaart({ candidate, overlay = false }: KandidaatKaartPro
         {/* Opdrachtgever */}
         {candidate.company && (
           <p className="text-xs font-medium mb-2" style={{ color: '#A68A52' }}>
-            {candidate.company.name}
+            <span title={candidate.company.name}>{getCompanyCode(candidate.company)}</span>
           </p>
         )}
 

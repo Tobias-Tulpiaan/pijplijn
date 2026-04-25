@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import type { CandidateWithRelations } from '@/types'
+import { getCompanyCode } from '@/lib/companyCode'
 import { BulkArchiveerDialog } from './BulkArchiveerDialog'
 
 type SortKey = 'name' | 'role' | 'company' | 'owner' | 'stage' | 'lastContact'
@@ -236,7 +237,11 @@ export function KandidatenTabel({ candidates, users }: KandidatenTabelProps) {
                     </td>
                     <td className="px-4 py-3 font-medium" style={{ color: '#1A1A1A' }}>{c.name}</td>
                     <td className="px-4 py-3" style={{ color: '#6B6B6B' }}>{c.role}</td>
-                    <td className="px-4 py-3" style={{ color: '#A68A52' }}>{c.company?.name ?? '—'}</td>
+                    <td className="px-4 py-3" style={{ color: '#A68A52' }}>
+                      {c.company
+                        ? <span title={c.company.name}>{getCompanyCode(c.company)}</span>
+                        : '—'}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <div
@@ -329,7 +334,7 @@ export function KandidatenTabel({ candidates, users }: KandidatenTabelProps) {
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs" style={{ color: '#6B6B6B' }}>
                     {c.company && (
-                      <span style={{ color: '#A68A52' }}>{c.company.name}</span>
+                      <span title={c.company.name} style={{ color: '#A68A52' }}>{getCompanyCode(c.company)}</span>
                     )}
                     <span className="flex items-center gap-1">
                       <div

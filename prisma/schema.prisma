@@ -50,6 +50,7 @@ model Candidate {
 model Company {
   id            String      @id @default(cuid())
   name          String      @unique
+  customCode    String?
   contactPerson String?
   contactEmail  String?
   contactPhone  String?
