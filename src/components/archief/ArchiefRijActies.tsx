@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreHorizontal, Eye, RotateCcw, Trash2 } from 'lucide-react'
+import { Eye, RotateCcw, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface Props {
   candidateId: string
@@ -13,14 +14,12 @@ interface Props {
 
 export function ArchiefRijActies({ candidateId, candidateName }: Props) {
   const router = useRouter()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [reactiveerLoading, setReactiveerLoading] = useState(false)
 
   async function heractiveer() {
-    setMenuOpen(false)
     setReactiveerLoading(true)
     try {
       const res = await fetch(`/api/candidates/${candidateId}`, {
@@ -54,57 +53,34 @@ export function ArchiefRijActies({ candidateId, candidateName }: Props) {
   }
 
   return (
-    <div className="relative flex justify-end">
-      <button
-        onClick={() => setMenuOpen((v) => !v)}
-        disabled={reactiveerLoading}
+    <div className="flex items-center justify-end gap-1">
+      <Link
+        href={`/kandidaat/${candidateId}`}
         className="p-1.5 rounded hover:bg-gray-100 transition-colors"
-        style={{ color: '#6B6B6B' }}
-        aria-label="Acties"
+        style={{ color: '#A68A52' }}
+        title="Bekijken"
       >
-        {reactiveerLoading ? (
-          <span className="text-xs" style={{ color: '#A68A52' }}>Bezig…</span>
-        ) : (
-          <MoreHorizontal size={16} />
-        )}
+        <Eye size={14} />
+      </Link>
+
+      <button
+        onClick={heractiveer}
+        disabled={reactiveerLoading}
+        className="p-1.5 rounded hover:bg-green-50 transition-colors"
+        style={{ color: reactiveerLoading ? '#9ca3af' : '#16a34a' }}
+        title="Heractiveren"
+      >
+        <RotateCcw size={14} />
       </button>
 
-      {menuOpen && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-          <div
-            className="absolute right-0 top-8 z-20 w-48 rounded-lg shadow-lg border border-gray-100 py-1"
-            style={{ backgroundColor: '#ffffff' }}
-          >
-            <a
-              href={`/kandidaat/${candidateId}`}
-              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
-              style={{ color: '#1A1A1A' }}
-              onClick={() => setMenuOpen(false)}
-            >
-              <Eye size={14} style={{ color: '#A68A52' }} />
-              Bekijken
-            </a>
-            <button
-              onClick={heractiveer}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
-              style={{ color: '#16a34a' }}
-            >
-              <RotateCcw size={14} />
-              Heractiveren
-            </button>
-            <div style={{ borderTop: '1px solid #f3f4f6', margin: '4px 0' }} />
-            <button
-              onClick={() => { setMenuOpen(false); setDeleteError(''); setDeleteOpen(true) }}
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-red-50 transition-colors"
-              style={{ color: '#dc2626' }}
-            >
-              <Trash2 size={14} />
-              Definitief verwijderen
-            </button>
-          </div>
-        </>
-      )}
+      <button
+        onClick={() => { setDeleteError(''); setDeleteOpen(true) }}
+        className="p-1.5 rounded hover:bg-red-50 transition-colors"
+        style={{ color: '#dc2626' }}
+        title="Definitief verwijderen"
+      >
+        <Trash2 size={14} />
+      </button>
 
       <Dialog open={deleteOpen} onOpenChange={(v) => { setDeleteOpen(v); if (!v) setDeleteError('') }}>
         <DialogContent className="max-w-md">
