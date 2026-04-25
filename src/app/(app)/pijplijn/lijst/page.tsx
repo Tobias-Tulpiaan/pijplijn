@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { prisma } from '@/lib/prisma'
 import { KandidatenTabel } from '@/components/pijplijn/KandidatenTabel'
@@ -45,5 +46,7 @@ export default async function LijstPage({ searchParams }: { searchParams: Search
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ])
 
-  return <KandidatenTabel candidates={candidates} users={users} />
+  const key = `${owner ?? 'all'}-${company ?? 'all'}-${stage ?? 'all'}-${q ?? ''}`
+
+  return <KandidatenTabel key={key} candidates={candidates} users={users} />
 }

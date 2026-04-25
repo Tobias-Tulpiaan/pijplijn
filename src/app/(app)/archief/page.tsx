@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { Archive } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
@@ -50,7 +51,7 @@ export default async function ArchiefPage({ searchParams }: { searchParams: Sear
           <p className="text-lg font-semibold" style={{ color: '#9ca3af' }}>Geen gearchiveerde kandidaten</p>
         </div>
       ) : (
-        <ArchiefTabel candidates={candidates} />
+        <ArchiefTabel key={`${reden ?? 'all'}-${owner ?? 'all'}-${q ?? ''}`} candidates={candidates} />
       )}
     </div>
   )

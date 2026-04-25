@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import Link from 'next/link'
 import { Users, CheckSquare, Receipt } from 'lucide-react'
@@ -26,6 +27,7 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
   const session = await auth()
   const params = await searchParams
   const { owner, company, q } = params
+  const key = `${owner ?? 'all'}-${company ?? 'all'}-${q ?? ''}`
 
   const today = new Date()
   const todayStart = startOfDay(today)
@@ -33,41 +35,48 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
   const monthStart = startOfMonth(today)
   const monthEnd = endOfMonth(today)
 
-  const [candidates, companies, users, actieveKandidatenCount, takenVandaagCount, gefactureerdCount] = await Promise.all([
-    prisma.candidate.findMany({
-      where: {
-        archived: false,
-        ...(owner && { owner: { name: owner } }),
-        ...(company && { company: { name: company } }),
-        ...(q && {
-          OR: [
-            { name: { contains: q, mode: 'insensitive' as const } },
-            { role: { contains: q, mode: 'insensitive' as const } },
-            { email: { contains: q, mode: 'insensitive' as const } },
-            { phone: { contains: q } },
-            { notes: { contains: q, mode: 'insensitive' as const } },
-            { company: { name: { contains: q, mode: 'insensitive' as const } } },
-            { contact: { name: { contains: q, mode: 'insensitive' as const } } },
-            { contact: { email: { contains: q, mode: 'insensitive' as const } } },
-          ],
-        }),
-      },
-      include,
-      orderBy: { createdAt: 'desc' },
+  // Shared where-clause: stat cards use same filters as the board
+  const baseWhere = {
+    archived: false,
+    ...(owner && { owner: { name: owner } }),
+    ...(company && { company: { name: company } }),
+    ...(q && {
+      OR: [
+        { name:    { contains: q, mode: 'insensitive' as const } },
+        { role:    { contains: q, mode: 'insensitive' as const } },
+        { email:   { contains: q, mode: 'insensitive' as const } },
+        { phone:   { contains: q } },
+        { notes:   { contains: q, mode: 'insensitive' as const } },
+        { company: { name:  { contains: q, mode: 'insensitive' as const } } },
+        { contact: { name:  { contains: q, mode: 'insensitive' as const } } },
+        { contact: { email: { contains: q, mode: 'insensitive' as const } } },
+      ],
     }),
+  }
+
+  const [candidates, companies, users, actieveKandidatenCount, takenVandaagCount, gefactureerdCount] = await Promise.all([
+    prisma.candidate.findMany({ where: baseWhere, include, orderBy: { createdAt: 'desc' } }),
     prisma.company.findMany({ orderBy: { name: 'asc' } }),
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
-    prisma.candidate.count({ where: { archived: false, stage: { lt: 100 } } }),
+
+    // Stat 1: active candidates — same filters as board
+    prisma.candidate.count({ where: baseWhere }),
+
+    // Stat 2: tasks today — owner filter → that consultant's tasks; else → logged-in user
     prisma.task.count({
       where: {
         completed: false,
-        assignedToId: session!.user.id,
         dueDate: { gte: todayStart, lte: todayEnd },
+        ...(owner
+          ? { assignedTo: { name: owner } }
+          : { assignedToId: session!.user.id }),
       },
     }),
+
+    // Stat 3: gefactureerd this month — same filters + stage >= 80
     prisma.candidate.count({
       where: {
-        archived: false,
+        ...baseWhere,
         stage: { gte: 80 },
         updatedAt: { gte: monthStart, lte: monthEnd },
       },
@@ -82,7 +91,9 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
           <div className="flex items-start justify-between">
             <div>
               <p className="text-3xl font-bold" style={{ color: '#A68A52' }}>{actieveKandidatenCount}</p>
-              <p className="text-sm mt-1" style={{ color: '#6B6B6B' }}>actieve kandidaten in pijplijn</p>
+              <p className="text-sm mt-1" style={{ color: '#6B6B6B' }}>
+                {owner || company || q ? 'gefilterde kandidaten' : 'actieve kandidaten in pijplijn'}
+              </p>
             </div>
             <Users size={22} style={{ color: '#CBAD74' }} />
           </div>
@@ -96,7 +107,9 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
           <div className="flex items-start justify-between">
             <div>
               <p className="text-3xl font-bold" style={{ color: '#A68A52' }}>{takenVandaagCount}</p>
-              <p className="text-sm mt-1" style={{ color: '#6B6B6B' }}>voor jou vandaag</p>
+              <p className="text-sm mt-1" style={{ color: '#6B6B6B' }}>
+                {owner ? `taken van ${owner} vandaag` : 'voor jou vandaag'}
+              </p>
             </div>
             <CheckSquare size={22} style={{ color: '#CBAD74' }} />
           </div>
@@ -136,7 +149,7 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
           )}
         </div>
       ) : (
-        <PijplijnBoard initialCandidates={candidates} users={users} />
+        <PijplijnBoard key={key} initialCandidates={candidates} users={users} />
       )}
     </div>
   )

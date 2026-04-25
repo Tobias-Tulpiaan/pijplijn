@@ -6,16 +6,17 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutGrid, Users, Building2, Calendar, CheckSquare,
-  LogOut, Archive, Settings, ChevronLeft, ChevronRight, X,
+  LogOut, Archive, Settings, ChevronLeft, ChevronRight, X, BarChart3,
 } from 'lucide-react'
 
 const menuItems = [
-  { href: '/pijplijn',         label: 'Pijplijn',        icon: LayoutGrid, exact: true  },
-  { href: '/pijplijn/lijst',   label: 'Kandidaten',      icon: Users,      exact: false },
-  { href: '/opdrachtgevers',   label: 'Opdrachtgevers',  icon: Building2,  exact: false },
-  { href: '/pijplijn/kalender',label: 'Kalender',        icon: Calendar,   exact: false },
-  { href: '/taken',            label: 'Taken',           icon: CheckSquare,exact: false },
-  { href: '/archief',          label: 'Archief',         icon: Archive,    exact: false },
+  { href: '/pijplijn',          label: 'Pijplijn',        icon: LayoutGrid, exact: true  },
+  { href: '/pijplijn/lijst',    label: 'Kandidaten',      icon: Users,      exact: false },
+  { href: '/opdrachtgevers',    label: 'Opdrachtgevers',  icon: Building2,  exact: false },
+  { href: '/pijplijn/kalender', label: 'Kalender',        icon: Calendar,   exact: false },
+  { href: '/statistieken',      label: 'Statistieken',    icon: BarChart3,  exact: false },
+  { href: '/taken',             label: 'Taken',           icon: CheckSquare,exact: false },
+  { href: '/archief',           label: 'Archief',         icon: Archive,    exact: false },
 ]
 
 function initialen(name: string | null | undefined): string {

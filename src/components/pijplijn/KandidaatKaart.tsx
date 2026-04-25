@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import Link from 'next/link'
+import { ArrowRightCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import type { CandidateWithRelations } from '@/types'
+import { VerplaatsStageSheet } from './VerplaatsStageSheet'
 
 function initialen(name: string): string {
   return name
@@ -22,6 +25,8 @@ interface KandidaatKaartProps {
 }
 
 export function KandidaatKaart({ candidate, overlay = false }: KandidaatKaartProps) {
+  const [verplaatsOpen, setVerplaatsOpen] = useState(false)
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: candidate.id,
     data: { candidate },
@@ -87,6 +92,28 @@ export function KandidaatKaart({ candidate, overlay = false }: KandidaatKaartPro
           )}
         </div>
       </Link>
+
+      {/* Mobile: Verplaats knop — onPointerDown stopPropagation prevents drag start */}
+      {!overlay && (
+        <div className="md:hidden mt-1.5" onPointerDown={(e) => e.stopPropagation()}>
+          <button
+            onClick={(e) => { e.preventDefault(); setVerplaatsOpen(true) }}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-medium transition-colors"
+            style={{ backgroundColor: 'rgba(203,173,116,0.12)', color: '#A68A52' }}
+          >
+            <ArrowRightCircle size={13} />
+            Verplaats naar...
+          </button>
+        </div>
+      )}
+
+      <VerplaatsStageSheet
+        candidateId={candidate.id}
+        candidateName={candidate.name}
+        currentStage={candidate.stage}
+        open={verplaatsOpen}
+        onClose={() => setVerplaatsOpen(false)}
+      />
     </div>
   )
 }

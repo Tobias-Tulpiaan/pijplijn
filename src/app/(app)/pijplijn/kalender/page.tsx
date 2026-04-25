@@ -1,12 +1,22 @@
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 import { prisma } from '@/lib/prisma'
 import { KalenderView, type CalEvent } from '@/components/pijplijn/KalenderView'
 import { format } from 'date-fns'
 
-export default async function KalenderPage() {
+type SearchParams = Promise<{ owner?: string; stage?: string }>
+
+export default async function KalenderPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams
+  const { owner, stage } = params
+
   const candidates = await prisma.candidate.findMany({
-    where: { archived: false },
+    where: {
+      archived: false,
+      ...(owner && { owner: { name: owner } }),
+      ...(stage && !isNaN(parseInt(stage)) && { stage: parseInt(stage) }),
+    },
     include: {
       tasks: true,
       stageHistory: { orderBy: { changedAt: 'desc' } },
@@ -53,5 +63,7 @@ export default async function KalenderPage() {
     }
   }
 
-  return <KalenderView events={events} />
+  const key = `${owner ?? 'all'}-${stage ?? 'all'}`
+
+  return <KalenderView key={key} events={events} />
 }

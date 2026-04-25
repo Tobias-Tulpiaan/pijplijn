@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import { STAGES } from '@/types'
@@ -14,6 +14,7 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
 
   const [searchInput, setSearchInput] = useState(searchParams.get('q') ?? '')
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -21,6 +22,7 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
   const currentOwner = searchParams.get('owner') ?? ''
   const currentCompany = searchParams.get('company') ?? ''
   const currentStage = searchParams.get('stage') ?? ''
+  const showStageFilter = pathname === '/pijplijn/lijst' || pathname === '/pijplijn/kalender'
 
   const hasFilters = !!(currentOwner || currentCompany || currentStage || searchParams.get('q'))
 
@@ -34,23 +36,29 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
   }
 
   function handleSelect(key: string, value: string) {
-    router.push(buildUrl({ [key]: value }))
-    router.refresh()
+    startTransition(() => {
+      router.push(buildUrl({ [key]: value }))
+      router.refresh()
+    })
   }
 
   function handleSearch(value: string) {
     setSearchInput(value)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      router.push(buildUrl({ q: value }))
-      router.refresh()
+      startTransition(() => {
+        router.push(buildUrl({ q: value }))
+        router.refresh()
+      })
     }, 300)
   }
 
   function clearFilters() {
     setSearchInput('')
-    router.push(pathname)
-    router.refresh()
+    startTransition(() => {
+      router.push(pathname)
+      router.refresh()
+    })
   }
 
   useEffect(() => {
@@ -59,7 +67,7 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
 
   return (
     <div
-      className="flex flex-wrap gap-3 items-center rounded-lg p-3 shadow-sm"
+      className={`flex flex-wrap gap-3 items-center rounded-lg p-3 shadow-sm transition-opacity${isPending ? ' opacity-60' : ''}`}
       style={{ backgroundColor: '#ffffff' }}
     >
       {/* Zoekbalk */}
@@ -105,20 +113,22 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
         ))}
       </select>
 
-      {/* Stage filter */}
-      <select
-        value={currentStage}
-        onChange={(e) => handleSelect('stage', e.target.value)}
-        className="h-9 px-3 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
-        style={{ color: currentStage ? '#1A1A1A' : '#6B6B6B' }}
-      >
-        <option value="">Alle stages</option>
-        {STAGES.map((s) => (
-          <option key={s.pct} value={String(s.pct)}>
-            {s.pct}% — {s.label}
-          </option>
-        ))}
-      </select>
+      {/* Stage filter — alleen op lijst- en kalender-view, niet op kanban */}
+      {showStageFilter && (
+        <select
+          value={currentStage}
+          onChange={(e) => handleSelect('stage', e.target.value)}
+          className="h-9 px-3 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+          style={{ color: currentStage ? '#1A1A1A' : '#6B6B6B' }}
+        >
+          <option value="">Alle stages</option>
+          {STAGES.map((s) => (
+            <option key={s.pct} value={String(s.pct)}>
+              {s.pct}% — {s.label}
+            </option>
+          ))}
+        </select>
+      )}
 
       {/* Wis filters */}
       {hasFilters && (
