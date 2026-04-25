@@ -36,7 +36,12 @@ export async function GET(request: Request) {
       OR: [
         { name: { contains: q, mode: 'insensitive' as const } },
         { role: { contains: q, mode: 'insensitive' as const } },
+        { email: { contains: q, mode: 'insensitive' as const } },
+        { phone: { contains: q } },
+        { notes: { contains: q, mode: 'insensitive' as const } },
         { company: { name: { contains: q, mode: 'insensitive' as const } } },
+        { contact: { name: { contains: q, mode: 'insensitive' as const } } },
+        { contact: { email: { contains: q, mode: 'insensitive' as const } } },
       ],
     }),
   }

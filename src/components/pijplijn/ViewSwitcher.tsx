@@ -26,7 +26,7 @@ export function ViewSwitcher() {
 
   return (
     <div
-      className="inline-flex rounded-lg p-1 gap-1"
+      className="flex w-full md:w-auto md:inline-flex rounded-lg p-1 gap-1"
       style={{ backgroundColor: 'rgba(203,173,116,0.12)' }}
     >
       {views.map(({ href, label, icon: Icon, exact }) => {
@@ -35,7 +35,7 @@ export function ViewSwitcher() {
           <button
             key={href}
             onClick={() => switchView(href)}
-            className="flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all"
+            className="flex flex-1 md:flex-none items-center justify-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-all"
             style={{
               backgroundColor: active ? '#CBAD74' : 'transparent',
               color: active ? '#1A1A1A' : '#6B6B6B',

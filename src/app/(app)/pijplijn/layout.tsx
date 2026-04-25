@@ -16,7 +16,7 @@ export default async function PijplijnLayout({ children }: { children: React.Rea
   return (
     <div className="flex flex-col gap-4" style={{ fontFamily: 'Aptos, Calibri, Arial, sans-serif' }}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>
           Pijplijn
         </h1>
@@ -28,7 +28,9 @@ export default async function PijplijnLayout({ children }: { children: React.Rea
       </div>
 
       {/* View switcher */}
-      <ViewSwitcher />
+      <Suspense>
+        <ViewSwitcher />
+      </Suspense>
 
       {/* Filterbalk */}
       <Suspense>

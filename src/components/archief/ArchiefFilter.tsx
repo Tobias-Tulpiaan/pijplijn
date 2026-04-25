@@ -1,17 +1,22 @@
 'use client'
 
+import { useRef, useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
+import { Search } from 'lucide-react'
 
 interface Props {
   users: { id: string; name: string }[]
   currentReden: string
   currentOwner: string
+  currentQ: string
 }
 
-export function ArchiefFilter({ users, currentReden, currentOwner }: Props) {
+export function ArchiefFilter({ users, currentReden, currentOwner, currentQ }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [searchInput, setSearchInput] = useState(currentQ)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function buildUrl(updates: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -28,8 +33,32 @@ export function ArchiefFilter({ users, currentReden, currentOwner }: Props) {
     router.refresh()
   }
 
+  function handleSearch(value: string) {
+    setSearchInput(value)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      router.push(buildUrl({ q: value }))
+      router.refresh()
+    }, 300)
+  }
+
+  useEffect(() => {
+    setSearchInput(currentQ)
+  }, [currentQ])
+
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2 items-center">
+      <div className="relative">
+        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: '#6B6B6B' }} />
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => handleSearch(e.target.value)}
+          placeholder="Zoeken..."
+          className="pl-8 pr-3 h-9 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74] w-40"
+          style={{ color: '#1A1A1A' }}
+        />
+      </div>
       <select
         value={currentReden}
         onChange={(e) => handleChange('reden', e.target.value)}

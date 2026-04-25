@@ -30,16 +30,20 @@ export default async function LijstPage({ searchParams }: { searchParams: Search
       OR: [
         { name: { contains: q, mode: 'insensitive' as const } },
         { role: { contains: q, mode: 'insensitive' as const } },
+        { email: { contains: q, mode: 'insensitive' as const } },
+        { phone: { contains: q } },
+        { notes: { contains: q, mode: 'insensitive' as const } },
         { company: { name: { contains: q, mode: 'insensitive' as const } } },
+        { contact: { name: { contains: q, mode: 'insensitive' as const } } },
+        { contact: { email: { contains: q, mode: 'insensitive' as const } } },
       ],
     }),
   }
 
-  const candidates = await prisma.candidate.findMany({
-    where,
-    include,
-    orderBy: { name: 'asc' },
-  })
+  const [candidates, users] = await Promise.all([
+    prisma.candidate.findMany({ where, include, orderBy: { name: 'asc' } }),
+    prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+  ])
 
-  return <KandidatenTabel candidates={candidates} />
+  return <KandidatenTabel candidates={candidates} users={users} />
 }

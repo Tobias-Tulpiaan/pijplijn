@@ -73,7 +73,7 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
           type="text"
           value={searchInput}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Zoek op naam, functie..."
+          placeholder="Zoek op naam, functie, email, telefoon, opdrachtgever..."
           className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
           style={{ color: '#1A1A1A' }}
         />

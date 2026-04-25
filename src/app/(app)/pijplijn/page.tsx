@@ -43,7 +43,12 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
           OR: [
             { name: { contains: q, mode: 'insensitive' as const } },
             { role: { contains: q, mode: 'insensitive' as const } },
+            { email: { contains: q, mode: 'insensitive' as const } },
+            { phone: { contains: q } },
+            { notes: { contains: q, mode: 'insensitive' as const } },
             { company: { name: { contains: q, mode: 'insensitive' as const } } },
+            { contact: { name: { contains: q, mode: 'insensitive' as const } } },
+            { contact: { email: { contains: q, mode: 'insensitive' as const } } },
           ],
         }),
       },
@@ -72,7 +77,7 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
   return (
     <div className="space-y-4">
       {/* Stat cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-lg p-4 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
           <div className="flex items-start justify-between">
             <div>

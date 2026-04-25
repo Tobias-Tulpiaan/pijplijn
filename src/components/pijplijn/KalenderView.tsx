@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   startOfMonth, endOfMonth, eachDayOfInterval,
   startOfWeek, endOfWeek, isSameMonth, isSameDay,
-  addMonths, subMonths, format, parseISO,
+  addMonths, subMonths, format, parseISO, isAfter, startOfDay,
 } from 'date-fns'
 import { nl } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -42,6 +42,23 @@ export function KalenderView({ events }: KalenderViewProps) {
 
   function eventsForDay(day: Date) {
     return events.filter((e) => isSameDay(parseISO(e.date), day))
+  }
+
+  // Agenda: events in current month, sorted by date, only upcoming/today
+  const agendaEvents = events
+    .filter((e) => {
+      const d = parseISO(e.date)
+      return isSameMonth(d, currentMonth) || isAfter(d, startOfDay(today))
+    })
+    .filter((e) => isSameMonth(parseISO(e.date), currentMonth))
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  const agendaByDay: { day: Date; events: typeof events }[] = []
+  for (const event of agendaEvents) {
+    const d = parseISO(event.date)
+    const last = agendaByDay[agendaByDay.length - 1]
+    if (last && isSameDay(last.day, d)) last.events.push(event)
+    else agendaByDay.push({ day: d, events: [event] })
   }
 
   return (
@@ -81,8 +98,8 @@ export function KalenderView({ events }: KalenderViewProps) {
         </button>
       </div>
 
-      {/* Dag-headers */}
-      <div className="grid grid-cols-7 border-b border-gray-100">
+      {/* Dag-headers — desktop only */}
+      <div className="hidden md:grid grid-cols-7 border-b border-gray-100">
         {DAGnamen.map((d) => (
           <div
             key={d}
@@ -94,8 +111,8 @@ export function KalenderView({ events }: KalenderViewProps) {
         ))}
       </div>
 
-      {/* Kalender grid */}
-      <div className="grid grid-cols-7">
+      {/* Kalender grid — desktop only */}
+      <div className="hidden md:grid grid-cols-7">
         {days.map((day, i) => {
           const dayEvents = eventsForDay(day)
           const isToday = isSameDay(day, today)
@@ -149,6 +166,49 @@ export function KalenderView({ events }: KalenderViewProps) {
             </div>
           )
         })}
+      </div>
+
+      {/* Mobile agenda */}
+      <div className="md:hidden divide-y divide-gray-100">
+        {agendaByDay.length === 0 ? (
+          <div className="py-8 text-center text-sm" style={{ color: '#9ca3af' }}>
+            Geen evenementen deze maand
+          </div>
+        ) : (
+          agendaByDay.map(({ day, events: dayEvents }) => (
+            <div key={day.toISOString()} className="px-4 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                  style={{
+                    backgroundColor: isSameDay(day, today) ? '#CBAD74' : '#f3f4f6',
+                    color: isSameDay(day, today) ? '#1A1A1A' : '#6B6B6B',
+                  }}
+                >
+                  {format(day, 'd')}
+                </span>
+                <span className="text-xs font-medium capitalize" style={{ color: '#6B6B6B' }}>
+                  {format(day, 'EEEE', { locale: nl })}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1.5 pl-9">
+                {dayEvents.map((event) => (
+                  <Link
+                    key={event.id}
+                    href={event.href}
+                    className="px-2.5 py-1.5 rounded-md text-sm font-medium hover:opacity-80 transition-opacity"
+                    style={{
+                      backgroundColor: eventStyle[event.type].bg,
+                      color: eventStyle[event.type].color,
+                    }}
+                  >
+                    {event.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Legenda */}

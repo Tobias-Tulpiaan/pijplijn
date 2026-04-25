@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -95,6 +96,7 @@ export function PijplijnBoard({ initialCandidates }: PijplijnBoardProps) {
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null)
   const [note, setNote] = useState('')
   const [saving, setSaving] = useState(false)
+  const [mobileStageIdx, setMobileStageIdx] = useState(0)
   const router = useRouter()
 
   const sensors = useSensors(
@@ -153,6 +155,8 @@ export function PijplijnBoard({ initialCandidates }: PijplijnBoardProps) {
     }
   }
 
+  const mobileStage = STAGES[mobileStageIdx]
+
   return (
     <div>
       {error && (
@@ -164,8 +168,9 @@ export function PijplijnBoard({ initialCandidates }: PijplijnBoardProps) {
         </div>
       )}
 
+      {/* Desktop kanban */}
       <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="hidden md:flex gap-4 overflow-x-auto pb-4">
           {STAGES.map((stage) => (
             <PijplijnKolom
               key={stage.pct}
@@ -183,6 +188,59 @@ export function PijplijnBoard({ initialCandidates }: PijplijnBoardProps) {
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* Mobile single-column view */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => setMobileStageIdx((i) => Math.max(0, i - 1))}
+            disabled={mobileStageIdx === 0}
+            className="p-2 rounded-md border border-gray-200 disabled:opacity-30 transition-colors hover:bg-gray-50"
+          >
+            <ChevronLeft size={18} style={{ color: '#6B6B6B' }} />
+          </button>
+          <div className="text-center">
+            <span className="text-2xl font-bold block" style={{ color: '#A68A52' }}>{mobileStage.pct}%</span>
+            <span className="text-xs" style={{ color: '#6B6B6B' }}>{mobileStage.label}</span>
+          </div>
+          <button
+            onClick={() => setMobileStageIdx((i) => Math.min(STAGES.length - 1, i + 1))}
+            disabled={mobileStageIdx === STAGES.length - 1}
+            className="p-2 rounded-md border border-gray-200 disabled:opacity-30 transition-colors hover:bg-gray-50"
+          >
+            <ChevronRight size={18} style={{ color: '#6B6B6B' }} />
+          </button>
+        </div>
+        <div
+          className="flex items-center justify-center gap-1.5 mb-3"
+        >
+          {STAGES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setMobileStageIdx(i)}
+              className="rounded-full transition-all"
+              style={{
+                width: i === mobileStageIdx ? 20 : 6,
+                height: 6,
+                backgroundColor: i === mobileStageIdx ? '#CBAD74' : '#d1d5db',
+              }}
+            />
+          ))}
+        </div>
+        <div
+          className="rounded-lg p-3 flex flex-col gap-2 min-h-[200px]"
+          style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}
+        >
+          {candidates.filter((c) => c.stage === mobileStage.pct).map((c) => (
+            <KandidaatKaart key={c.id} candidate={c} />
+          ))}
+          {candidates.filter((c) => c.stage === mobileStage.pct).length === 0 && (
+            <div className="flex-1 flex items-center justify-center py-8 text-sm" style={{ color: '#9ca3af' }}>
+              Geen kandidaten in deze fase
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Notitie-dialog */}
       {pendingMove && (
