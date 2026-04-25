@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 const candidateInclude = {
   owner: true,
   company: true,
+  contact: true,
   tasks: true,
   stageHistory: {
     include: { changedBy: true },
@@ -59,11 +60,11 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { name, role, ownerId, companyId, phone, email, linkedinUrl } = body
+    const { name, role, ownerId, companyId, contactId, phone, email, linkedinUrl } = body
 
     if (!name?.trim()) return NextResponse.json({ error: 'Naam is verplicht' }, { status: 400 })
     if (!role?.trim()) return NextResponse.json({ error: 'Functie is verplicht' }, { status: 400 })
-    if (!ownerId) return NextResponse.json({ error: 'Owner is verplicht' }, { status: 400 })
+    if (!ownerId) return NextResponse.json({ error: 'Consultant is verplicht' }, { status: 400 })
 
     const candidate = await prisma.candidate.create({
       data: {
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
         role: role.trim(),
         ownerId,
         companyId: companyId || null,
+        contactId: contactId || null,
         phone: phone?.trim() || null,
         email: email?.trim() || null,
         linkedinUrl: linkedinUrl?.trim() || null,

@@ -1,27 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 
-interface Company {
-  id: string
-  name: string
-}
-
-interface User {
-  id: string
-  name: string
-}
+interface Company { id: string; name: string }
+interface User { id: string; name: string }
+interface Contact { id: string; name: string; role: string | null }
 
 interface NieuweKandidaatDialogProps {
   companies: Company[]
@@ -29,11 +18,7 @@ interface NieuweKandidaatDialogProps {
   currentUserId: string
 }
 
-export function NieuweKandidaatDialog({
-  companies,
-  users,
-  currentUserId,
-}: NieuweKandidaatDialogProps) {
+export function NieuweKandidaatDialog({ companies, users, currentUserId }: NieuweKandidaatDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -48,16 +33,25 @@ export function NieuweKandidaatDialog({
   const [email, setEmail] = useState('')
   const [linkedin, setLinkedin] = useState('')
 
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [contactId, setContactId] = useState('')
+
+  useEffect(() => {
+    if (!companyId || companyId === '__new__') {
+      setContacts([])
+      setContactId('')
+      return
+    }
+    fetch(`/api/contacts?companyId=${companyId}`)
+      .then((r) => r.json())
+      .then((data) => { setContacts(data); setContactId('') })
+      .catch(() => {})
+  }, [companyId])
+
   function resetForm() {
-    setNaam('')
-    setFunctie('')
-    setCompanyId('')
-    setNieuweOpdrachtgever('')
-    setOwnerId(currentUserId)
-    setTelefoon('')
-    setEmail('')
-    setLinkedin('')
-    setError('')
+    setNaam(''); setFunctie(''); setCompanyId(''); setNieuweOpdrachtgever('')
+    setOwnerId(currentUserId); setTelefoon(''); setEmail(''); setLinkedin('')
+    setContacts([]); setContactId(''); setError('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -96,6 +90,7 @@ export function NieuweKandidaatDialog({
           name: naam.trim(),
           role: functie.trim(),
           companyId: resolvedCompanyId,
+          contactId: contactId || null,
           ownerId,
           phone: telefoon.trim() || null,
           email: email.trim() || null,
@@ -131,148 +126,118 @@ export function NieuweKandidaatDialog({
         Nieuwe kandidaat
       </Button>
 
-      <Dialog
-        open={open}
-        onOpenChange={(v) => {
-          setOpen(v)
-          if (!v) resetForm()
-        }}
-      >
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm() }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle style={{ color: '#1A1A1A' }}>Nieuwe kandidaat toevoegen</DialogTitle>
+          </DialogHeader>
 
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle style={{ color: '#1A1A1A' }}>Nieuwe kandidaat toevoegen</DialogTitle>
-        </DialogHeader>
-
-        {error && (
-          <div
-            className="px-4 py-3 rounded-md text-sm border"
-            style={{ backgroundColor: '#fef2f2', color: '#991b1b', borderColor: '#fecaca' }}
-          >
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="naam">Naam *</Label>
-            <Input
-              id="naam"
-              value={naam}
-              onChange={(e) => setNaam(e.target.value)}
-              placeholder="Volledige naam"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="functie">Functie *</Label>
-            <Input
-              id="functie"
-              value={functie}
-              onChange={(e) => setFunctie(e.target.value)}
-              placeholder="Bijv. Accountmanager"
-              required
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="opdrachtgever">Opdrachtgever</Label>
-            <select
-              id="opdrachtgever"
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-            >
-              <option value="">— Geen —</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-              <option value="__new__">+ Nieuwe opdrachtgever</option>
-            </select>
-          </div>
-
-          {companyId === '__new__' && (
-            <div className="space-y-1.5">
-              <Label htmlFor="nieuweOpdrachtgever">Naam nieuwe opdrachtgever *</Label>
-              <Input
-                id="nieuweOpdrachtgever"
-                value={nieuweOpdrachtgever}
-                onChange={(e) => setNieuweOpdrachtgever(e.target.value)}
-                placeholder="Bedrijfsnaam"
-              />
+          {error && (
+            <div className="px-4 py-3 rounded-md text-sm border"
+              style={{ backgroundColor: '#fef2f2', color: '#991b1b', borderColor: '#fecaca' }}>
+              {error}
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="owner">Eigenaar *</Label>
-            <select
-              id="owner"
-              value={ownerId}
-              onChange={(e) => setOwnerId(e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-              required
-            >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="naam">Naam *</Label>
+              <Input id="naam" value={naam} onChange={(e) => setNaam(e.target.value)} placeholder="Volledige naam" required />
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="telefoon">Telefoon</Label>
-            <Input
-              id="telefoon"
-              value={telefoon}
-              onChange={(e) => setTelefoon(e.target.value)}
-              placeholder="+31 6 00000000"
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="functie">Functie *</Label>
+              <Input id="functie" value={functie} onChange={(e) => setFunctie(e.target.value)} placeholder="Bijv. Accountmanager" required />
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="email">E-mail</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="kandidaat@email.nl"
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="opdrachtgever">Opdrachtgever</Label>
+              <select
+                id="opdrachtgever"
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+              >
+                <option value="">— Geen —</option>
+                {companies.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+                <option value="__new__">+ Nieuwe opdrachtgever</option>
+              </select>
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="linkedin">LinkedIn URL</Label>
-            <Input
-              id="linkedin"
-              value={linkedin}
-              onChange={(e) => setLinkedin(e.target.value)}
-              placeholder="https://linkedin.com/in/..."
-            />
-          </div>
+            {companyId === '__new__' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="nieuweOpdrachtgever">Naam nieuwe opdrachtgever *</Label>
+                <Input
+                  id="nieuweOpdrachtgever"
+                  value={nieuweOpdrachtgever}
+                  onChange={(e) => setNieuweOpdrachtgever(e.target.value)}
+                  placeholder="Bedrijfsnaam"
+                />
+              </div>
+            )}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => { setOpen(false); resetForm() }}
-              disabled={loading}
-            >
-              Annuleren
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              style={{ backgroundColor: loading ? '#e5e7eb' : '#CBAD74', color: '#1A1A1A' }}
-            >
-              {loading ? 'Opslaan…' : 'Kandidaat toevoegen'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
+            {companyId && companyId !== '__new__' && (
+              <div className="space-y-1.5">
+                <Label htmlFor="contactpersoon">Contactpersoon</Label>
+                <select
+                  id="contactpersoon"
+                  value={contactId}
+                  onChange={(e) => setContactId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                >
+                  <option value="">— Geen —</option>
+                  {contacts.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}{c.role ? ` (${c.role})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="owner">Consultant *</Label>
+              <select
+                id="owner"
+                value={ownerId}
+                onChange={(e) => setOwnerId(e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
+                required
+              >
+                {users.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="telefoon">Telefoon</Label>
+              <Input id="telefoon" value={telefoon} onChange={(e) => setTelefoon(e.target.value)} placeholder="+31 6 00000000" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">E-mail</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="kandidaat@email.nl" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="linkedin">LinkedIn URL</Label>
+              <Input id="linkedin" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="https://linkedin.com/in/..." />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => { setOpen(false); resetForm() }} disabled={loading}>
+                Annuleren
+              </Button>
+              <Button type="submit" disabled={loading}
+                style={{ backgroundColor: loading ? '#e5e7eb' : '#CBAD74', color: '#1A1A1A' }}>
+                {loading ? 'Opslaan…' : 'Kandidaat toevoegen'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
       </Dialog>
     </>
   )

@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma'
 const candidateInclude = {
   owner: true,
   company: true,
+  contact: true,
   tasks: true,
   stageHistory: {
     include: { changedBy: true },
@@ -52,6 +53,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         ...(body.role !== undefined && { role: body.role }),
         ...(body.stage !== undefined && { stage: body.stage }),
         ...(body.companyId !== undefined && { companyId: body.companyId }),
+        ...(body.contactId !== undefined && { contactId: body.contactId }),
         ...(body.ownerId !== undefined && { ownerId: body.ownerId }),
         ...(body.phone !== undefined && { phone: body.phone }),
         ...(body.email !== undefined && { email: body.email }),

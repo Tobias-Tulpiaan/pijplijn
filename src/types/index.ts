@@ -4,6 +4,7 @@ export type CandidateWithRelations = Prisma.CandidateGetPayload<{
   include: {
     owner: true
     company: true
+    contact: true
     tasks: true
     stageHistory: {
       include: { changedBy: true }

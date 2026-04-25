@@ -11,6 +11,7 @@ import { startOfDay, endOfDay, startOfMonth, endOfMonth } from 'date-fns'
 const include = {
   owner: true,
   company: true,
+  contact: true,
   tasks: true,
   stageHistory: {
     include: { changedBy: true },

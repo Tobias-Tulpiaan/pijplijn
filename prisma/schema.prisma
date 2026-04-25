@@ -24,6 +24,8 @@ model Candidate {
   role         String
   companyId    String?
   company      Company?       @relation(fields: [companyId], references: [id])
+  contactId    String?
+  contact      Contact?       @relation(fields: [contactId], references: [id])
   ownerId      String
   owner        User           @relation("CandidateOwner", fields: [ownerId], references: [id])
   phone        String?
@@ -49,7 +51,22 @@ model Company {
   contactEmail  String?
   contactPhone  String?
   candidates    Candidate[]
+  contacts      Contact[]
   createdAt     DateTime    @default(now())
+}
+
+model Contact {
+  id          String      @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  role        String?
+  notes       String?     @db.Text
+  companyId   String
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidates  Candidate[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
 
 model Task {

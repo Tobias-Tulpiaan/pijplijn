@@ -50,6 +50,7 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
     include: {
       owner: true,
       company: true,
+      contact: true,
       tasks: {
         include: { assignedTo: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
@@ -218,6 +219,33 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
                     <Mail size={12} style={{ color: '#CBAD74' }} />
                     {candidate.company.contactEmail}
                   </a>
+                )}
+                {candidate.contact ? (
+                  <div className="mt-2 pt-2 border-t border-gray-100 space-y-0.5">
+                    <p className="text-xs font-semibold" style={{ color: '#6B6B6B' }}>Contactpersoon</p>
+                    <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>
+                      {candidate.contact.name}
+                      {candidate.contact.role && (
+                        <span className="font-normal text-xs ml-1.5" style={{ color: '#6B6B6B' }}>
+                          — {candidate.contact.role}
+                        </span>
+                      )}
+                    </p>
+                    {candidate.contact.email && (
+                      <a href={`mailto:${candidate.contact.email}`} className="flex items-center gap-2 text-sm hover:underline" style={{ color: '#1A1A1A' }}>
+                        <Mail size={12} style={{ color: '#CBAD74' }} />
+                        {candidate.contact.email}
+                      </a>
+                    )}
+                    {candidate.contact.phone && (
+                      <a href={`tel:${candidate.contact.phone}`} className="flex items-center gap-2 text-sm hover:underline" style={{ color: '#1A1A1A' }}>
+                        <Phone size={12} style={{ color: '#CBAD74' }} />
+                        {candidate.contact.phone}
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs mt-2" style={{ color: '#9ca3af' }}>Geen contactpersoon gekoppeld</p>
                 )}
               </div>
             </InfoCard>

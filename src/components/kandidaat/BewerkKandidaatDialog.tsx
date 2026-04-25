@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Pencil, Trash2 } from 'lucide-react'
 import { STAGES } from '@/types'
 import type { CandidateWithRelations } from '@/types'
+
+interface Contact { id: string; name: string; role: string | null }
 
 interface Props {
   candidate: CandidateWithRelations
@@ -26,6 +28,7 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
   const [naam, setNaam] = useState(candidate.name)
   const [functie, setFunctie] = useState(candidate.role)
   const [companyId, setCompanyId] = useState(candidate.companyId ?? '')
+  const [contactId, setContactId] = useState(candidate.contactId ?? '')
   const [ownerId, setOwnerId] = useState(candidate.ownerId)
   const [stage, setStage] = useState(String(candidate.stage))
   const [telefoon, setTelefoon] = useState(candidate.phone ?? '')
@@ -33,18 +36,35 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
   const [linkedin, setLinkedin] = useState(candidate.linkedinUrl ?? '')
   const [notes, setNotes] = useState(candidate.notes ?? '')
 
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    if (!companyId) {
+      setContacts([])
+      if (!isFirstRender.current) setContactId('')
+      isFirstRender.current = false
+      return
+    }
+    const first = isFirstRender.current
+    isFirstRender.current = false
+    fetch(`/api/contacts?companyId=${companyId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setContacts(data)
+        if (!first) setContactId('')
+      })
+      .catch(() => {})
+  }, [companyId])
+
   function resetState() {
-    setError('')
-    setConfirmDelete(false)
-    setNaam(candidate.name)
-    setFunctie(candidate.role)
-    setCompanyId(candidate.companyId ?? '')
-    setOwnerId(candidate.ownerId)
-    setStage(String(candidate.stage))
-    setTelefoon(candidate.phone ?? '')
-    setEmail(candidate.email ?? '')
-    setLinkedin(candidate.linkedinUrl ?? '')
-    setNotes(candidate.notes ?? '')
+    setError(''); setConfirmDelete(false)
+    setNaam(candidate.name); setFunctie(candidate.role)
+    setCompanyId(candidate.companyId ?? ''); setContactId(candidate.contactId ?? '')
+    setOwnerId(candidate.ownerId); setStage(String(candidate.stage))
+    setTelefoon(candidate.phone ?? ''); setEmail(candidate.email ?? '')
+    setLinkedin(candidate.linkedinUrl ?? ''); setNotes(candidate.notes ?? '')
+    isFirstRender.current = true
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -59,6 +79,7 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
           name: naam.trim(),
           role: functie.trim(),
           companyId: companyId || null,
+          contactId: contactId || null,
           ownerId,
           stage: parseInt(stage),
           phone: telefoon.trim() || null,
@@ -126,14 +147,9 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
                 Dit kan niet ongedaan worden.
               </p>
               <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={loading}>
-                  Annuleren
-                </Button>
-                <Button
-                  onClick={handleDelete}
-                  disabled={loading}
-                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
-                >
+                <Button variant="outline" onClick={() => setConfirmDelete(false)} disabled={loading}>Annuleren</Button>
+                <Button onClick={handleDelete} disabled={loading}
+                  style={{ backgroundColor: '#dc2626', color: '#ffffff' }}>
                   {loading ? 'Verwijderen…' : 'Definitief verwijderen'}
                 </Button>
               </div>
@@ -150,41 +166,41 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="b-stage">Stage</Label>
-                <select
-                  id="b-stage"
-                  value={stage}
-                  onChange={(e) => setStage(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-                >
+                <select id="b-stage" value={stage} onChange={(e) => setStage(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
                   {STAGES.map((s) => (
-                    <option key={s.pct} value={String(s.pct)}>
-                      {s.pct}% — {s.label}
-                    </option>
+                    <option key={s.pct} value={String(s.pct)}>{s.pct}% — {s.label}</option>
                   ))}
                 </select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="b-company">Opdrachtgever</Label>
-                <select
-                  id="b-company"
-                  value={companyId}
-                  onChange={(e) => setCompanyId(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-                >
+                <select id="b-company" value={companyId} onChange={(e) => setCompanyId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
                   <option value="">— Geen —</option>
                   {companies.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </div>
+              {companyId && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="b-contact">Contactpersoon</Label>
+                  <select id="b-contact" value={contactId} onChange={(e) => setContactId(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
+                    <option value="">— Geen —</option>
+                    {contacts.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.role ? ` (${c.role})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="b-owner">Consultant</Label>
-                <select
-                  id="b-owner"
-                  value={ownerId}
-                  onChange={(e) => setOwnerId(e.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-                >
+                <select id="b-owner" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
@@ -204,36 +220,21 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="b-notes">Notities</Label>
-                <textarea
-                  id="b-notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs resize-none"
-                  placeholder="Interne notities..."
-                />
+                <textarea id="b-notes" value={notes} onChange={(e) => setNotes(e.target.value)}
+                  rows={3} className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs resize-none"
+                  placeholder="Interne notities..." />
               </div>
 
               <div className="flex items-center justify-between pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setConfirmDelete(true)}
-                  disabled={loading}
-                  style={{ color: '#dc2626', borderColor: '#dc2626' }}
-                >
+                <Button type="button" variant="outline" onClick={() => setConfirmDelete(true)} disabled={loading}
+                  style={{ color: '#dc2626', borderColor: '#dc2626' }}>
                   <Trash2 size={14} />
                   Verwijderen
                 </Button>
                 <div className="flex gap-3">
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-                    Annuleren
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    style={{ backgroundColor: loading ? '#e5e7eb' : '#CBAD74', color: '#1A1A1A' }}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>Annuleren</Button>
+                  <Button type="submit" disabled={loading}
+                    style={{ backgroundColor: loading ? '#e5e7eb' : '#CBAD74', color: '#1A1A1A' }}>
                     {loading ? 'Opslaan…' : 'Opslaan'}
                   </Button>
                 </div>

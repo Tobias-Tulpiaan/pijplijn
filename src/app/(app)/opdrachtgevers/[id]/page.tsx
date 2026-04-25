@@ -6,6 +6,7 @@ import { ArrowLeft, Mail, Phone } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { PijplijnBoard } from '@/components/pijplijn/PijplijnBoard'
 import { BewerkOpdrachtgeverDialog } from '@/components/opdrachtgever/BewerkOpdrachtgeverDialog'
+import { ContactenLijst } from '@/components/opdrachtgever/ContactenLijst'
 
 type Params = Promise<{ id: string }>
 
@@ -15,10 +16,12 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
   const company = await prisma.company.findUnique({
     where: { id },
     include: {
+      contacts: { orderBy: { name: 'asc' } },
       candidates: {
         include: {
           owner: true,
           company: true,
+          contact: true,
           tasks: true,
           stageHistory: {
             include: { changedBy: true },
@@ -51,10 +54,7 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
       </Link>
 
       {/* Company info */}
-      <div
-        className="rounded-xl p-6 mb-6 shadow-sm border border-gray-100"
-        style={{ backgroundColor: '#ffffff' }}
-      >
+      <div className="rounded-xl p-6 mb-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
         <div className="flex items-start justify-between mb-2">
           <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>{company.name}</h1>
           <BewerkOpdrachtgeverDialog company={company} />
@@ -62,7 +62,7 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
         <div className="space-y-1">
           {company.contactPerson && (
             <p className="text-sm" style={{ color: '#6B6B6B' }}>
-              Contactpersoon: <span style={{ color: '#1A1A1A' }}>{company.contactPerson}</span>
+              Primair contact: <span style={{ color: '#1A1A1A' }}>{company.contactPerson}</span>
             </p>
           )}
           {company.contactEmail && (
@@ -78,6 +78,12 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
             </a>
           )}
         </div>
+      </div>
+
+      {/* Contactpersonen */}
+      <div className="rounded-xl p-6 mb-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+        <h2 className="text-base font-semibold mb-3" style={{ color: '#A68A52' }}>Contactpersonen</h2>
+        <ContactenLijst companyId={company.id} initialContacts={company.contacts} />
       </div>
 
       {/* Mini kanban */}

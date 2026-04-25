@@ -67,3 +67,13 @@ De seed maakt twee gebruikers aan:
 Standaardwachtwoord: `tulpiaan2026`
 
 > **Pas dit wachtwoord direct aan** na de eerste login via de instellingen-pagina (of via de database rechtstreeks). Het standaardwachtwoord is alleen bedoeld voor de initiële setup.
+
+### Datamigratie: contactpersonen (Fase 7)
+
+Na het deployen van de `add_contacts` migratie op productie, run het migratie-script om bestaande contactpersonen (uit Company-velden) te overzetten naar het nieuwe Contact-model:
+
+```cmd
+set "DATABASE_URL=<prod_connection_string>" && npx prisma migrate deploy && npx tsx src/scripts/migrate-contacts.ts
+```
+
+Het script is idempotent: al bestaande contacten worden overgeslagen.

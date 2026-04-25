@@ -6,6 +6,7 @@ import { KandidatenTabel } from '@/components/pijplijn/KandidatenTabel'
 const include = {
   owner: true,
   company: true,
+  contact: true,
   tasks: true,
   stageHistory: {
     include: { changedBy: true },
