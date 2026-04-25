@@ -13,6 +13,7 @@ import { BewerkKandidaatDialog } from '@/components/kandidaat/BewerkKandidaatDia
 import { ArchiveerKandidaatDialog } from '@/components/kandidaat/ArchiveerKandidaatDialog'
 import { TakenLijst } from '@/components/kandidaat/TakenLijst'
 import { HeractiveerKnop } from '@/components/kandidaat/HeractiveerKnop'
+import { VerwijderArchiefDialog } from '@/components/kandidaat/VerwijderArchiefDialog'
 import { getSetting } from '@/lib/settings'
 
 type Params = Promise<{ id: string }>
@@ -99,7 +100,10 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
               )}
             </div>
           </div>
-          <HeractiveerKnop candidateId={candidate.id} />
+          <div className="flex items-center gap-2">
+            <HeractiveerKnop candidateId={candidate.id} />
+            <VerwijderArchiefDialog candidateId={candidate.id} candidateName={candidate.name} />
+          </div>
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { nl } from 'date-fns/locale'
 import { Archive } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { ArchiefFilter } from '@/components/archief/ArchiefFilter'
+import { ArchiefRijActies } from '@/components/archief/ArchiefRijActies'
 
 type SearchParams = Promise<{ reden?: string; owner?: string }>
 
@@ -61,6 +62,7 @@ export default async function ArchiefPage({ searchParams }: { searchParams: Sear
                 <th className="text-left px-4 py-3 font-semibold" style={{ color: '#6B6B6B' }}>Reden</th>
                 <th className="text-left px-4 py-3 font-semibold" style={{ color: '#6B6B6B' }}>Gearchiveerd</th>
                 <th className="text-left px-4 py-3 font-semibold" style={{ color: '#6B6B6B' }}>Consultant</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody>
@@ -103,6 +105,9 @@ export default async function ArchiefPage({ searchParams }: { searchParams: Sear
                         : '—'}
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: '#A68A52' }}>{c.owner.name}</td>
+                    <td className="px-4 py-3">
+                      <ArchiefRijActies candidateId={c.id} candidateName={c.name} />
+                    </td>
                   </tr>
                 )
               })}
