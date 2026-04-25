@@ -16,3 +16,7 @@ export async function getSetting(key: string, fallback = ''): Promise<string> {
     return fallback
   }
 }
+
+export function invalidateSetting(key: string) {
+  cache.delete(key)
+}
