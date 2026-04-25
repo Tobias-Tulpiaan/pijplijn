@@ -65,19 +65,21 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { name, role, ownerId, companyId, contactId, phone, email, linkedinUrl } = body
+    const { name, role, ownerId, companyId, contactId, vacatureId, phone, email, linkedinUrl } = body
 
-    if (!name?.trim()) return NextResponse.json({ error: 'Naam is verplicht' }, { status: 400 })
-    if (!role?.trim()) return NextResponse.json({ error: 'Functie is verplicht' }, { status: 400 })
-    if (!ownerId) return NextResponse.json({ error: 'Consultant is verplicht' }, { status: 400 })
+    if (!name?.trim())  return NextResponse.json({ error: 'Naam is verplicht' },      { status: 400 })
+    if (!role?.trim())  return NextResponse.json({ error: 'Functie is verplicht' },   { status: 400 })
+    if (!ownerId)       return NextResponse.json({ error: 'Consultant is verplicht' }, { status: 400 })
+    if (!vacatureId)    return NextResponse.json({ error: 'Vacature is verplicht' },   { status: 400 })
 
     const candidate = await prisma.candidate.create({
       data: {
         name: name.trim(),
         role: role.trim(),
         ownerId,
-        companyId: companyId || null,
-        contactId: contactId || null,
+        companyId:  companyId  || null,
+        contactId:  contactId  || null,
+        vacatureId: vacatureId || null,
         phone: phone?.trim() || null,
         email: email?.trim() || null,
         linkedinUrl: linkedinUrl?.trim() || null,

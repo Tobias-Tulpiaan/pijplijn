@@ -4,19 +4,30 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Mail, Phone } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 import { PijplijnBoard } from '@/components/pijplijn/PijplijnBoard'
 import { BewerkOpdrachtgeverDialog } from '@/components/opdrachtgever/BewerkOpdrachtgeverDialog'
 import { ContactenLijst } from '@/components/opdrachtgever/ContactenLijst'
+import { NieuweVacatureDialog } from '@/components/vacature/NieuweVacatureDialog'
+import { VACATURE_STATUS } from '@/types'
 
 type Params = Promise<{ id: string }>
 
 export default async function OpdrachtgeverDetailPage({ params }: { params: Params }) {
   const { id } = await params
+  const session = await auth()
 
   const company = await prisma.company.findUnique({
     where: { id },
     include: {
       contacts: { orderBy: { name: 'asc' } },
+      vacatures: {
+        include: {
+          consultant: { select: { id: true, name: true } },
+          _count: { select: { candidates: true } },
+        },
+        orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      },
       candidates: {
         include: {
           owner: true,
@@ -37,10 +48,10 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
 
   if (!company) notFound()
 
-  const users = await prisma.user.findMany({
-    orderBy: { name: 'asc' },
-    select: { id: true, name: true },
-  })
+  const [users, allCompanies] = await Promise.all([
+    prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.company.findMany({ orderBy: { name: 'asc' } }),
+  ])
 
   return (
     <div style={{ fontFamily: 'Aptos, Calibri, Arial, sans-serif' }}>
@@ -84,6 +95,51 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
       <div className="rounded-xl p-6 mb-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
         <h2 className="text-base font-semibold mb-3" style={{ color: '#A68A52' }}>Contactpersonen</h2>
         <ContactenLijst companyId={company.id} initialContacts={company.contacts} />
+      </div>
+
+      {/* Vacatures */}
+      <div className="rounded-xl p-6 mb-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold" style={{ color: '#A68A52' }}>
+            Vacatures ({company.vacatures.length})
+          </h2>
+          <NieuweVacatureDialog
+            companies={allCompanies}
+            users={users}
+            currentUserId={session!.user.id}
+            defaultCompanyId={id}
+          />
+        </div>
+        {company.vacatures.length === 0 ? (
+          <p className="text-sm" style={{ color: '#6B6B6B' }}>Nog geen vacatures voor deze opdrachtgever.</p>
+        ) : (
+          <div className="space-y-2">
+            {company.vacatures.map((v) => {
+              const info = VACATURE_STATUS[v.status] ?? VACATURE_STATUS.open
+              return (
+                <Link
+                  key={v.id}
+                  href={`/vacatures/${v.id}`}
+                  className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:shadow-sm transition-shadow"
+                  style={{ backgroundColor: '#f9fafb' }}
+                >
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>{v.title}</p>
+                    <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>{v.consultant.name}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs" style={{ color: '#6B6B6B' }}>
+                      {v._count.candidates} kandidaten
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: info.bg, color: info.color }}>
+                      {info.label}
+                    </span>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Mini kanban */}

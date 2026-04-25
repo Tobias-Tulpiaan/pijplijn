@@ -5,16 +5,17 @@ import { prisma } from '@/lib/prisma'
 import { KalenderView, type CalEvent } from '@/components/pijplijn/KalenderView'
 import { format } from 'date-fns'
 
-type SearchParams = Promise<{ owner?: string; stage?: string }>
+type SearchParams = Promise<{ owner?: string; stage?: string; vacatureId?: string }>
 
 export default async function KalenderPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
-  const { owner, stage } = params
+  const { owner, stage, vacatureId } = params
 
   const candidates = await prisma.candidate.findMany({
     where: {
       archived: false,
-      ...(owner && { owner: { name: owner } }),
+      ...(owner      && { owner: { name: owner } }),
+      ...(vacatureId && { vacatureId }),
       ...(stage && !isNaN(parseInt(stage)) && { stage: parseInt(stage) }),
     },
     include: {
@@ -63,7 +64,7 @@ export default async function KalenderPage({ searchParams }: { searchParams: Sea
     }
   }
 
-  const key = `${owner ?? 'all'}-${stage ?? 'all'}`
+  const key = `${owner ?? 'all'}-${stage ?? 'all'}-${vacatureId ?? 'all'}`
 
   return <KalenderView key={key} events={events} />
 }

@@ -6,25 +6,27 @@ import { Search, X } from 'lucide-react'
 import { STAGES } from '@/types'
 
 interface FilterBarProps {
-  owners: { id: string; name: string }[]
+  owners:    { id: string; name: string }[]
   companies: { id: string; name: string }[]
+  vacatures: { id: string; title: string; company: { name: string } }[]
 }
 
-export function FilterBar({ owners, companies }: FilterBarProps) {
-  const router = useRouter()
-  const pathname = usePathname()
+export function FilterBar({ owners, companies, vacatures }: FilterBarProps) {
+  const router       = useRouter()
+  const pathname     = usePathname()
   const searchParams = useSearchParams()
   const [isPending, startTransition] = useTransition()
 
   const [searchInput, setSearchInput] = useState(searchParams.get('q') ?? '')
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const currentOwner = searchParams.get('owner') ?? ''
-  const currentCompany = searchParams.get('company') ?? ''
-  const currentStage = searchParams.get('stage') ?? ''
-  const showStageFilter = pathname === '/pijplijn/lijst' || pathname === '/pijplijn/kalender'
+  const currentOwner     = searchParams.get('owner')      ?? ''
+  const currentCompany   = searchParams.get('company')    ?? ''
+  const currentStage     = searchParams.get('stage')      ?? ''
+  const currentVacature  = searchParams.get('vacatureId') ?? ''
 
-  const hasFilters = !!(currentOwner || currentCompany || currentStage || searchParams.get('q'))
+  const showStageFilter   = pathname === '/pijplijn/lijst' || pathname === '/pijplijn/kalender'
+  const hasFilters = !!(currentOwner || currentCompany || currentStage || currentVacature || searchParams.get('q'))
 
   function buildUrl(updates: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -72,16 +74,12 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
     >
       {/* Zoekbalk */}
       <div className="relative flex-1 min-w-[200px]">
-        <Search
-          size={15}
-          className="absolute left-2.5 top-1/2 -translate-y-1/2"
-          style={{ color: '#6B6B6B' }}
-        />
+        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: '#6B6B6B' }} />
         <input
           type="text"
           value={searchInput}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder="Zoek op naam, functie, email, telefoon, opdrachtgever..."
+          placeholder="Zoek op naam, functie, email, telefoon..."
           className="w-full pl-8 pr-3 py-1.5 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
           style={{ color: '#1A1A1A' }}
         />
@@ -113,7 +111,22 @@ export function FilterBar({ owners, companies }: FilterBarProps) {
         ))}
       </select>
 
-      {/* Stage filter — alleen op lijst- en kalender-view, niet op kanban */}
+      {/* Vacature filter */}
+      <select
+        value={currentVacature}
+        onChange={(e) => handleSelect('vacatureId', e.target.value)}
+        className="h-9 px-3 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+        style={{ color: currentVacature ? '#1A1A1A' : '#6B6B6B' }}
+      >
+        <option value="">Alle vacatures</option>
+        {vacatures.map((v) => (
+          <option key={v.id} value={v.id}>
+            {v.title} ({v.company.name})
+          </option>
+        ))}
+      </select>
+
+      {/* Stage filter — alleen op lijst- en kalender-view */}
       {showStageFilter && (
         <select
           value={currentStage}

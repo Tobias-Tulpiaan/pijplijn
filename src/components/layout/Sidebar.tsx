@@ -6,13 +6,14 @@ import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import {
   LayoutGrid, Users, Building2, Calendar, CheckSquare,
-  LogOut, Archive, Settings, ChevronLeft, ChevronRight, X, BarChart3,
+  LogOut, Archive, Settings, ChevronLeft, ChevronRight, X, BarChart3, Briefcase,
 } from 'lucide-react'
 
 const menuItems = [
   { href: '/pijplijn',          label: 'Pijplijn',        icon: LayoutGrid, exact: true  },
   { href: '/pijplijn/lijst',    label: 'Kandidaten',      icon: Users,      exact: false },
   { href: '/opdrachtgevers',    label: 'Opdrachtgevers',  icon: Building2,  exact: false },
+  { href: '/vacatures',         label: 'Vacatures',       icon: Briefcase,  exact: false },
   { href: '/pijplijn/kalender', label: 'Kalender',        icon: Calendar,   exact: false },
   { href: '/statistieken',      label: 'Statistieken',    icon: BarChart3,  exact: false },
   { href: '/taken',             label: 'Taken',           icon: CheckSquare,exact: false },

@@ -14,7 +14,9 @@ import { ArchiveerKandidaatDialog } from '@/components/kandidaat/ArchiveerKandid
 import { TakenLijst } from '@/components/kandidaat/TakenLijst'
 import { HeractiveerKnop } from '@/components/kandidaat/HeractiveerKnop'
 import { VerwijderArchiefDialog } from '@/components/kandidaat/VerwijderArchiefDialog'
+import { DatumsAanpassenDialog } from '@/components/kandidaat/DatumsAanpassenDialog'
 import { getSetting } from '@/lib/settings'
+import { VACATURE_STATUS } from '@/types'
 
 type Params = Promise<{ id: string }>
 
@@ -51,6 +53,9 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
       owner: true,
       company: true,
       contact: true,
+      vacature: {
+        include: { contact: true },
+      },
       tasks: {
         include: { assignedTo: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
@@ -132,8 +137,16 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
                 Gesprek inplannen in Outlook
               </a>
             )}
+            <DatumsAanpassenDialog
+              candidateId={candidate.id}
+              createdAt={candidate.createdAt}
+              archivedAt={candidate.archivedAt}
+              stageHistory={candidate.stageHistory.map((h) => ({
+                id: h.id, toStage: h.toStage, changedAt: h.changedAt, note: h.note,
+              }))}
+            />
             <ArchiveerKandidaatDialog candidateId={candidate.id} candidateName={candidate.name} />
-            <BewerkKandidaatDialog candidate={candidate} companies={companies} users={users} />
+            <BewerkKandidaatDialog candidate={candidate} companies={companies} users={users} vacatureId={candidate.vacatureId} />
           </div>
         )}
       </div>
@@ -185,6 +198,48 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
               </div>
             )}
           </InfoCard>
+
+          {candidate.vacature && (
+            <InfoCard title="Vacature">
+              <div className="space-y-1.5">
+                <div className="flex items-start justify-between">
+                  <Link
+                    href={`/vacatures/${candidate.vacature.id}`}
+                    className="font-semibold text-sm hover:underline"
+                    style={{ color: '#A68A52' }}
+                  >
+                    {candidate.vacature.title}
+                  </Link>
+                  {(() => {
+                    const si = VACATURE_STATUS[candidate.vacature.status]
+                    return si ? (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: si.bg, color: si.color }}>
+                        {si.label}
+                      </span>
+                    ) : null
+                  })()}
+                </div>
+                {(candidate.vacature.salaryMonthMin || candidate.vacature.salaryMonthMax) && (
+                  <p className="text-xs" style={{ color: '#6B6B6B' }}>
+                    {[candidate.vacature.salaryMonthMin, candidate.vacature.salaryMonthMax].filter(Boolean).map(n => `€${n!.toLocaleString('nl-NL')}`).join(' – ')}/mnd
+                  </p>
+                )}
+                {(candidate.vacature.salaryYearMin || candidate.vacature.salaryYearMax) && (
+                  <p className="text-xs" style={{ color: '#6B6B6B' }}>
+                    {[candidate.vacature.salaryYearMin, candidate.vacature.salaryYearMax].filter(Boolean).map(n => `€${n!.toLocaleString('nl-NL')}`).join(' – ')}/jaar
+                  </p>
+                )}
+                {candidate.vacature.location && (
+                  <p className="text-xs" style={{ color: '#6B6B6B' }}>{candidate.vacature.location}</p>
+                )}
+                {candidate.vacature.workModel && (
+                  <p className="text-xs" style={{ color: '#6B6B6B' }}>
+                    {{ kantoor: 'Op kantoor', hybride: 'Hybride', remote: 'Remote' }[candidate.vacature.workModel] ?? candidate.vacature.workModel}
+                  </p>
+                )}
+              </div>
+            </InfoCard>
+          )}
 
           {candidate.company && (
             <InfoCard

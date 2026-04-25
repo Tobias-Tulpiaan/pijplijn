@@ -21,13 +21,13 @@ const include = {
   },
 } as const
 
-type SearchParams = Promise<{ owner?: string; company?: string; q?: string }>
+type SearchParams = Promise<{ owner?: string; company?: string; q?: string; vacatureId?: string }>
 
 export default async function PijplijnPage({ searchParams }: { searchParams: SearchParams }) {
   const session = await auth()
   const params = await searchParams
-  const { owner, company, q } = params
-  const key = `${owner ?? 'all'}-${company ?? 'all'}-${q ?? ''}`
+  const { owner, company, q, vacatureId } = params
+  const key = `${owner ?? 'all'}-${company ?? 'all'}-${q ?? ''}-${vacatureId ?? 'all'}`
 
   const today = new Date()
   const todayStart = startOfDay(today)
@@ -38,8 +38,9 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
   // Shared where-clause: stat cards use same filters as the board
   const baseWhere = {
     archived: false,
-    ...(owner && { owner: { name: owner } }),
-    ...(company && { company: { name: company } }),
+    ...(owner      && { owner: { name: owner } }),
+    ...(company    && { company: { name: company } }),
+    ...(vacatureId && { vacatureId }),
     ...(q && {
       OR: [
         { name:    { contains: q, mode: 'insensitive' as const } },

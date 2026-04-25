@@ -8,9 +8,14 @@ import { Suspense } from 'react'
 export default async function PijplijnLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
 
-  const [companies, users] = await Promise.all([
+  const [companies, users, vacatures] = await Promise.all([
     prisma.company.findMany({ orderBy: { name: 'asc' } }),
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
+    prisma.vacature.findMany({
+      where: { status: { not: 'gesloten' } },
+      select: { id: true, title: true, companyId: true, company: { select: { name: true } } },
+      orderBy: [{ company: { name: 'asc' } }, { title: 'asc' }],
+    }),
   ])
 
   return (
@@ -34,7 +39,7 @@ export default async function PijplijnLayout({ children }: { children: React.Rea
 
       {/* Filterbalk */}
       <Suspense>
-        <FilterBar owners={users} companies={companies} />
+        <FilterBar owners={users} companies={companies} vacatures={vacatures} />
       </Suspense>
 
       {/* View inhoud */}

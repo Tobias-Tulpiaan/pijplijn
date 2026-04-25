@@ -11,12 +11,14 @@ const PERIODS = [
 ]
 
 interface Props {
-  users:          { id: string; name: string }[]
-  currentPeriod:  string
-  currentOwnerId: string
+  users:             { id: string; name: string }[]
+  currentPeriod:     string
+  currentOwnerId:    string
+  currentVacatureId: string
+  vacatures:         { id: string; title: string; company: { name: string } }[]
 }
 
-export function StatFilter({ users, currentPeriod, currentOwnerId }: Props) {
+export function StatFilter({ users, currentPeriod, currentOwnerId, currentVacatureId, vacatures }: Props) {
   const router      = useRouter()
   const pathname    = usePathname()
   const searchParams = useSearchParams()
@@ -53,6 +55,20 @@ export function StatFilter({ users, currentPeriod, currentOwnerId }: Props) {
           <option key={u.id} value={u.id}>{u.name}</option>
         ))}
       </select>
+
+      {vacatures.length > 0 && (
+        <select
+          value={currentVacatureId}
+          onChange={(e) => handleChange('vacatureId', e.target.value)}
+          className="h-9 px-3 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+          style={{ color: '#1A1A1A' }}
+        >
+          <option value="">Alle vacatures</option>
+          {vacatures.map(v => (
+            <option key={v.id} value={v.id}>{v.title} ({v.company.name})</option>
+          ))}
+        </select>
+      )}
     </div>
   )
 }

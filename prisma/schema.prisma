@@ -8,30 +8,33 @@ datasource db {
 }
 
 model User {
-  id              String         @id @default(cuid())
-  email           String         @unique
-  name            String
-  passwordHash    String
-  createdAt       DateTime       @default(now())
-  ownedCandidates Candidate[]    @relation("CandidateOwner")
-  tasks           Task[]
-  stageChanges    StageHistory[]
+  id                    String         @id @default(cuid())
+  email                 String         @unique
+  name                  String
+  passwordHash          String
+  createdAt             DateTime       @default(now())
+  ownedCandidates       Candidate[]    @relation("CandidateOwner")
+  tasks                 Task[]
+  stageChanges          StageHistory[]
+  vacaturesAsConsultant Vacature[]     @relation("VacatureConsultant")
 }
 
 model Candidate {
-  id           String         @id @default(cuid())
-  name         String
-  role         String
-  companyId    String?
-  company      Company?       @relation(fields: [companyId], references: [id])
-  contactId    String?
-  contact      Contact?       @relation(fields: [contactId], references: [id])
-  ownerId      String
-  owner        User           @relation("CandidateOwner", fields: [ownerId], references: [id])
-  phone        String?
-  email        String?
-  linkedinUrl  String?
-  lastContact  DateTime?
+  id             String         @id @default(cuid())
+  name           String
+  role           String
+  companyId      String?
+  company        Company?       @relation(fields: [companyId], references: [id])
+  contactId      String?
+  contact        Contact?       @relation(fields: [contactId], references: [id])
+  vacatureId     String?
+  vacature       Vacature?      @relation(fields: [vacatureId], references: [id])
+  ownerId        String
+  owner          User           @relation("CandidateOwner", fields: [ownerId], references: [id])
+  phone          String?
+  email          String?
+  linkedinUrl    String?
+  lastContact    DateTime?
   stage          Int            @default(10)
   notes          String?        @db.Text
   archived       Boolean        @default(false)
@@ -52,21 +55,56 @@ model Company {
   contactPhone  String?
   candidates    Candidate[]
   contacts      Contact[]
+  vacatures     Vacature[]
   createdAt     DateTime    @default(now())
 }
 
 model Contact {
-  id          String      @id @default(cuid())
-  name        String
-  email       String?
-  phone       String?
-  role        String?
-  notes       String?     @db.Text
-  companyId   String
-  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  candidates  Candidate[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id        String     @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  role      String?
+  notes     String?    @db.Text
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidates Candidate[]
+  vacatures  Vacature[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Vacature {
+  id               String      @id @default(cuid())
+  title            String
+  companyId        String
+  company          Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contactId        String?
+  contact          Contact?    @relation(fields: [contactId], references: [id])
+  consultantId     String
+  consultant       User        @relation("VacatureConsultant", fields: [consultantId], references: [id])
+  status           String      @default("open")
+  positions        Int         @default(1)
+  contractType     String?
+  hoursPerWeek     Int?
+  location         String?
+  workModel        String?
+  salaryMonthMin   Int?
+  salaryMonthMax   Int?
+  salaryYearMin    Int?
+  salaryYearMax    Int?
+  bonus            String?     @db.Text
+  leaseAuto        String?
+  pensionExtras    String?     @db.Text
+  feeOpdrachtgever Int?
+  description      String?     @db.Text
+  highlights       String?     @db.Text
+  notes            String?     @db.Text
+  deadline         DateTime?
+  isAlgemeen       Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  candidates       Candidate[]
 }
 
 model Task {

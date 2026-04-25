@@ -10,7 +10,7 @@ import { prisma } from '@/lib/prisma'
 import { STAGES } from '@/types'
 import { StatFilter } from '@/components/statistieken/StatFilter'
 
-type SearchParams = Promise<{ period?: string; consultant?: string }>
+type SearchParams = Promise<{ period?: string; consultant?: string; vacatureId?: string }>
 
 function getPeriodRange(period: string): { start: Date; end: Date } | null {
   const now = new Date()
@@ -34,15 +34,17 @@ function periodLabel(period: string): string {
 }
 
 export default async function StatistiekenPage({ searchParams }: { searchParams: SearchParams }) {
-  const params   = await searchParams
-  const period   = params.period   ?? 'this_month'
-  const ownerId  = params.consultant ?? ''
+  const params     = await searchParams
+  const period     = params.period     ?? 'this_month'
+  const ownerId    = params.consultant ?? ''
+  const vacatureId = params.vacatureId ?? ''
 
   const range    = getPeriodRange(period)
   const now      = new Date()
 
-  const ownerFilter  = ownerId ? { ownerId } : {}
-  const rangeFilter  = range   ? { gte: range.start, lte: range.end } : undefined
+  const ownerFilter    = ownerId    ? { ownerId }    : {}
+  const vacatureFilter = vacatureId ? { vacatureId } : {}
+  const rangeFilter    = range      ? { gte: range.start, lte: range.end } : undefined
 
   const [
     activeCount,
@@ -52,14 +54,17 @@ export default async function StatistiekenPage({ searchParams }: { searchParams:
     users,
     activeByOwner,
     archived6Months,
+    allVacatures,
+    vacatureCandidates,
   ] = await Promise.all([
-    prisma.candidate.count({ where: { archived: false, ...ownerFilter } }),
+    prisma.candidate.count({ where: { archived: false, ...ownerFilter, ...vacatureFilter } }),
 
     prisma.candidate.findMany({
       where: {
         archived: true,
         ...(rangeFilter && { archivedAt: rangeFilter }),
         ...ownerFilter,
+        ...vacatureFilter,
       },
       select: { archivedReason: true, archivedAt: true, createdAt: true, ownerId: true },
     }),
@@ -67,7 +72,8 @@ export default async function StatistiekenPage({ searchParams }: { searchParams:
     prisma.stageHistory.findMany({
       where: {
         ...(rangeFilter && { changedAt: rangeFilter }),
-        ...(ownerId && { candidate: { ownerId } }),
+        ...(ownerId    && { candidate: { ownerId } }),
+        ...(vacatureId && { candidate: { vacatureId } }),
       },
       select: { toStage: true, candidateId: true },
     }),
@@ -76,6 +82,7 @@ export default async function StatistiekenPage({ searchParams }: { searchParams:
       where: {
         ...(rangeFilter && { createdAt: rangeFilter }),
         ...ownerFilter,
+        ...vacatureFilter,
       },
     }),
 
@@ -92,8 +99,24 @@ export default async function StatistiekenPage({ searchParams }: { searchParams:
         archived: true,
         archivedAt: { gte: startOfMonth(subMonths(now, 5)) },
         ...ownerFilter,
+        ...vacatureFilter,
       },
       select: { archivedReason: true, archivedAt: true },
+    }),
+
+    prisma.vacature.findMany({
+      select: { id: true, title: true, positions: true, company: { select: { name: true } } },
+      orderBy: [{ company: { name: 'asc' } }, { title: 'asc' }],
+    }),
+
+    prisma.candidate.findMany({
+      where: {
+        archived: true,
+        ...(rangeFilter && { archivedAt: rangeFilter }),
+        ...ownerFilter,
+        vacatureId: { not: null },
+      },
+      select: { vacatureId: true, archivedReason: true, archivedAt: true, createdAt: true },
     }),
   ])
 
@@ -143,6 +166,30 @@ export default async function StatistiekenPage({ searchParams }: { searchParams:
     return { id: u.id, name: u.name, inPijplijn, aangenomen: ua, afgewezen: uw, afgesloten: totaal, conversiePercent: totaal > 0 ? Math.round(ua / totaal * 100) : 0 }
   }).sort((a, b) => b.aangenomen - a.aangenomen)
 
+  // ── Top vacatures ─────────────────────────────────────────────────────────
+  const vacatureStatsMap = new Map<string, { aangenomen: number; total: number; days: number[] }>()
+  for (const c of vacatureCandidates) {
+    if (!c.vacatureId) continue
+    const entry = vacatureStatsMap.get(c.vacatureId) ?? { aangenomen: 0, total: 0, days: [] }
+    entry.total++
+    if (c.archivedReason === 'aangenomen') {
+      entry.aangenomen++
+      if (c.archivedAt) entry.days.push(differenceInDays(c.archivedAt, c.createdAt))
+    }
+    vacatureStatsMap.set(c.vacatureId, entry)
+  }
+
+  const topVacatures = allVacatures
+    .map(v => {
+      const s = vacatureStatsMap.get(v.id)
+      if (!s) return null
+      const conversie = s.total > 0 ? Math.round(s.aangenomen / s.total * 100) : 0
+      const avgD = s.days.length > 0 ? Math.round(s.days.reduce((a, b) => a + b, 0) / s.days.length) : null
+      return { id: v.id, title: v.title, company: v.company.name, positions: v.positions, aangenomen: s.aangenomen, total: s.total, conversie, avgD }
+    })
+    .filter((v): v is NonNullable<typeof v> => v !== null)
+    .sort((a, b) => b.aangenomen - a.aangenomen)
+
   // Funnel gold gradient: lightest at 10%, darkest at 100%
   function funnelColor(i: number): string {
     const opacity = 0.35 + (i / (STAGES.length - 1)) * 0.65
@@ -158,7 +205,13 @@ export default async function StatistiekenPage({ searchParams }: { searchParams:
           <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Statistieken</h1>
           <span className="text-sm ml-1" style={{ color: '#6B6B6B' }}>— {periodLabel(period)}</span>
         </div>
-        <StatFilter users={users} currentPeriod={period} currentOwnerId={ownerId} />
+        <StatFilter
+          users={users}
+          currentPeriod={period}
+          currentOwnerId={ownerId}
+          currentVacatureId={vacatureId}
+          vacatures={allVacatures}
+        />
       </div>
 
       {/* ── Sectie 1: Kengetallen ── */}
@@ -293,7 +346,58 @@ export default async function StatistiekenPage({ searchParams }: { searchParams:
         </div>
       </div>
 
-      {/* ── Sectie 4: Performance per consultant ── */}
+      {/* ── Sectie 4: Top vacatures ── */}
+      {topVacatures.length > 0 && (
+        <div className="rounded-lg bg-white shadow-sm border border-gray-100 p-5">
+          <h2 className="text-base font-semibold mb-4" style={{ color: '#1A1A1A' }}>Top vacatures deze periode</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '2px solid #f3f4f6' }}>
+                  {['Vacature', 'Opdrachtgever', 'Posities', 'Aangenomen', 'Conversie', 'Doorlooptijd'].map(h => (
+                    <th key={h} className="pb-2 text-left text-xs font-semibold uppercase tracking-wide" style={{ color: '#6B6B6B' }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {topVacatures.map((v, i) => (
+                  <tr
+                    key={v.id}
+                    style={{ borderBottom: i < topVacatures.length - 1 ? '1px solid #f9fafb' : undefined }}
+                  >
+                    <td className="py-3 font-medium" style={{ color: '#1A1A1A' }}>{v.title}</td>
+                    <td className="py-3 text-sm" style={{ color: '#6B6B6B' }}>{v.company}</td>
+                    <td className="py-3">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(203,173,116,0.15)', color: '#A68A52' }}>
+                        {v.positions}
+                      </span>
+                    </td>
+                    <td className="py-3 font-semibold" style={{ color: '#16a34a' }}>{v.aangenomen}</td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#f3f4f6', maxWidth: 60 }}>
+                          <div
+                            className="h-2 rounded-full"
+                            style={{ width: `${v.conversie}%`, backgroundColor: v.conversie >= 50 ? '#16a34a' : '#CBAD74' }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold" style={{ color: '#1A1A1A' }}>{v.conversie}%</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-sm" style={{ color: '#6B6B6B' }}>
+                      {v.avgD !== null ? `${v.avgD}d` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sectie 5: Performance per consultant ── */}
       <div className="rounded-lg bg-white shadow-sm border border-gray-100 p-5">
         <h2 className="text-base font-semibold mb-4" style={{ color: '#1A1A1A' }}>Performance per consultant</h2>
         <div className="overflow-x-auto">

@@ -16,16 +16,17 @@ const include = {
   },
 } as const
 
-type SearchParams = Promise<{ owner?: string; company?: string; stage?: string; q?: string }>
+type SearchParams = Promise<{ owner?: string; company?: string; stage?: string; q?: string; vacatureId?: string }>
 
 export default async function LijstPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams
-  const { owner, company, stage, q } = params
+  const { owner, company, stage, q, vacatureId } = params
 
   const where = {
     archived: false,
-    ...(owner && { owner: { name: owner } }),
-    ...(company && { company: { name: company } }),
+    ...(owner      && { owner: { name: owner } }),
+    ...(company    && { company: { name: company } }),
+    ...(vacatureId && { vacatureId }),
     ...(stage && !isNaN(parseInt(stage)) && { stage: parseInt(stage) }),
     ...(q && {
       OR: [
@@ -46,7 +47,7 @@ export default async function LijstPage({ searchParams }: { searchParams: Search
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ])
 
-  const key = `${owner ?? 'all'}-${company ?? 'all'}-${stage ?? 'all'}-${q ?? ''}`
+  const key = `${owner ?? 'all'}-${company ?? 'all'}-${stage ?? 'all'}-${q ?? ''}-${vacatureId ?? 'all'}`
 
   return <KandidatenTabel key={key} candidates={candidates} users={users} />
 }

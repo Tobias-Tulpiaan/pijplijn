@@ -10,15 +10,17 @@ import { Pencil, Trash2 } from 'lucide-react'
 import { STAGES } from '@/types'
 import type { CandidateWithRelations } from '@/types'
 
-interface Contact { id: string; name: string; role: string | null }
+interface Contact  { id: string; name: string; role: string | null }
+interface Vacature { id: string; title: string }
 
 interface Props {
-  candidate: CandidateWithRelations
-  companies: { id: string; name: string }[]
-  users: { id: string; name: string }[]
+  candidate:   CandidateWithRelations
+  companies:   { id: string; name: string }[]
+  users:       { id: string; name: string }[]
+  vacatureId?: string | null
 }
 
-export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
+export function BewerkKandidaatDialog({ candidate, companies, users, vacatureId: initialVacatureId }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -29,6 +31,7 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
   const [functie, setFunctie] = useState(candidate.role)
   const [companyId, setCompanyId] = useState(candidate.companyId ?? '')
   const [contactId, setContactId] = useState(candidate.contactId ?? '')
+  const [vacatureId, setVacatureId] = useState(initialVacatureId ?? '')
   const [ownerId, setOwnerId] = useState(candidate.ownerId)
   const [stage, setStage] = useState(String(candidate.stage))
   const [telefoon, setTelefoon] = useState(candidate.phone ?? '')
@@ -37,22 +40,26 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
   const [notes, setNotes] = useState(candidate.notes ?? '')
 
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [vacatures, setVacatures] = useState<Vacature[]>([])
   const isFirstRender = useRef(true)
 
   useEffect(() => {
     if (!companyId) {
-      setContacts([])
-      if (!isFirstRender.current) setContactId('')
+      setContacts([]); setVacatures([])
+      if (!isFirstRender.current) { setContactId(''); setVacatureId('') }
       isFirstRender.current = false
       return
     }
     const first = isFirstRender.current
     isFirstRender.current = false
-    fetch(`/api/contacts?companyId=${companyId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setContacts(data)
-        if (!first) setContactId('')
+    Promise.all([
+      fetch(`/api/contacts?companyId=${companyId}`).then((r) => r.json()),
+      fetch(`/api/vacatures?companyId=${companyId}`).then((r) => r.json()),
+    ])
+      .then(([contactData, vacatureData]) => {
+        setContacts(contactData)
+        setVacatures(vacatureData)
+        if (!first) { setContactId(''); setVacatureId('') }
       })
       .catch(() => {})
   }, [companyId])
@@ -61,6 +68,7 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
     setError(''); setConfirmDelete(false)
     setNaam(candidate.name); setFunctie(candidate.role)
     setCompanyId(candidate.companyId ?? ''); setContactId(candidate.contactId ?? '')
+    setVacatureId(initialVacatureId ?? '')
     setOwnerId(candidate.ownerId); setStage(String(candidate.stage))
     setTelefoon(candidate.phone ?? ''); setEmail(candidate.email ?? '')
     setLinkedin(candidate.linkedinUrl ?? ''); setNotes(candidate.notes ?? '')
@@ -78,8 +86,9 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
         body: JSON.stringify({
           name: naam.trim(),
           role: functie.trim(),
-          companyId: companyId || null,
-          contactId: contactId || null,
+          companyId:  companyId  || null,
+          contactId:  contactId  || null,
+          vacatureId: vacatureId || null,
           ownerId,
           stage: parseInt(stage),
           phone: telefoon.trim() || null,
@@ -183,6 +192,16 @@ export function BewerkKandidaatDialog({ candidate, companies, users }: Props) {
                   ))}
                 </select>
               </div>
+              {companyId && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="b-vacature">Vacature</Label>
+                  <select id="b-vacature" value={vacatureId} onChange={(e) => setVacatureId(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs">
+                    <option value="">— Geen —</option>
+                    {vacatures.map((v) => <option key={v.id} value={v.id}>{v.title}</option>)}
+                  </select>
+                </div>
+              )}
               {companyId && (
                 <div className="space-y-1.5">
                   <Label htmlFor="b-contact">Contactpersoon</Label>

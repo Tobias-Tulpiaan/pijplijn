@@ -14,6 +14,15 @@ export type CandidateWithRelations = Prisma.CandidateGetPayload<{
   }
 }>
 
+export type VacatureWithRelations = Prisma.VacatureGetPayload<{
+  include: {
+    company: true
+    contact: true
+    consultant: true
+    _count: { select: { candidates: true } }
+  }
+}>
+
 export type StageDefinition = { pct: number; label: string }
 
 export const STAGES: StageDefinition[] = [
@@ -31,4 +40,11 @@ export const STAGES: StageDefinition[] = [
 
 export function STAGE_LABEL(pct: number): string {
   return STAGES.find((s) => s.pct === pct)?.label ?? `${pct}%`
+}
+
+export const VACATURE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  open:     { label: 'Open',     color: '#16a34a', bg: 'rgba(22,163,74,0.1)'  },
+  on_hold:  { label: 'On hold',  color: '#d97706', bg: 'rgba(217,119,6,0.1)'  },
+  vervuld:  { label: 'Vervuld',  color: '#A68A52', bg: 'rgba(203,173,116,0.15)' },
+  gesloten: { label: 'Gesloten', color: '#6B6B6B', bg: 'rgba(107,107,107,0.1)' },
 }
