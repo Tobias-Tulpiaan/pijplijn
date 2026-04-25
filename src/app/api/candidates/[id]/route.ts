@@ -52,6 +52,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         ...(body.role !== undefined && { role: body.role }),
         ...(body.stage !== undefined && { stage: body.stage }),
         ...(body.companyId !== undefined && { companyId: body.companyId }),
+        ...(body.ownerId !== undefined && { ownerId: body.ownerId }),
         ...(body.phone !== undefined && { phone: body.phone }),
         ...(body.email !== undefined && { email: body.email }),
         ...(body.linkedinUrl !== undefined && { linkedinUrl: body.linkedinUrl }),
