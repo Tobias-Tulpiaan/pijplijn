@@ -9,7 +9,7 @@ export default async function PijplijnLayout({ children }: { children: React.Rea
   const session = await auth()
 
   const [companies, users, vacatures] = await Promise.all([
-    prisma.company.findMany({ orderBy: { name: 'asc' } }),
+    prisma.company.findMany({ where: { archived: false }, orderBy: { name: 'asc' } }),
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
     prisma.vacature.findMany({
       where: { status: { not: 'gesloten' } },

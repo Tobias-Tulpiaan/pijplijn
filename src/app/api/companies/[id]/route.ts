@@ -54,10 +54,16 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
 
-    const count = await prisma.candidate.count({ where: { companyId: id } })
-    if (count > 0) {
+    const company = await prisma.company.findUnique({
+      where: { id },
+      select: { _count: { select: { candidates: true, vacatures: true } } },
+    })
+    if (!company) return NextResponse.json({ error: 'Niet gevonden' }, { status: 404 })
+
+    const { candidates, vacatures } = company._count
+    if (candidates > 0 || vacatures > 0) {
       return NextResponse.json(
-        { error: `Kan niet verwijderen: er zijn nog ${count} kandidaten gekoppeld aan deze opdrachtgever.` },
+        { error: `Kan niet verwijderen: ${candidates} kandidaten en ${vacatures} vacatures gekoppeld.` },
         { status: 400 }
       )
     }

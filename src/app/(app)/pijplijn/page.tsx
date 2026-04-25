@@ -57,7 +57,7 @@ export default async function PijplijnPage({ searchParams }: { searchParams: Sea
 
   const [candidates, companies, users, actieveKandidatenCount, takenVandaagCount, gefactureerdCount] = await Promise.all([
     prisma.candidate.findMany({ where: baseWhere, include, orderBy: { createdAt: 'desc' } }),
-    prisma.company.findMany({ orderBy: { name: 'asc' } }),
+    prisma.company.findMany({ where: { archived: false }, orderBy: { name: 'asc' } }),
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
 
     // Stat 1: active candidates — same filters as board

@@ -50,7 +50,7 @@ export function Sidebar({ user, drawerOpen = false, onClose }: SidebarProps) {
     })
   }
 
-  const isCollapsed = mounted && collapsed
+  const isCollapsed = mounted && collapsed && !drawerOpen
 
   const settingsActive = pathname === '/instellingen' || pathname.startsWith('/instellingen/')
 

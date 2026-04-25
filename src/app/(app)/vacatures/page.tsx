@@ -36,7 +36,7 @@ export default async function VacaturesPage({ searchParams }: { searchParams: Se
       },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     }),
-    prisma.company.findMany({ orderBy: { name: 'asc' } }),
+    prisma.company.findMany({ where: { archived: false }, orderBy: { name: 'asc' } }),
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ])
 

@@ -53,6 +53,9 @@ model Company {
   contactPerson String?
   contactEmail  String?
   contactPhone  String?
+  archived      Boolean     @default(false)
+  archivedAt    DateTime?
+  archivedNote  String?     @db.Text
   candidates    Candidate[]
   contacts      Contact[]
   vacatures     Vacature[]

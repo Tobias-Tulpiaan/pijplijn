@@ -4,12 +4,29 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const companies = await prisma.company.findMany({ orderBy: { name: 'asc' } })
+    const { searchParams } = new URL(request.url)
+    const archived = searchParams.get('archived') === 'true'
+    const q        = searchParams.get('q')?.trim() || ''
+
+    const companies = await prisma.company.findMany({
+      where: {
+        archived,
+        ...(q && {
+          OR: [
+            { name:     { contains: q, mode: 'insensitive' } },
+            { contacts: { some: { name:  { contains: q, mode: 'insensitive' } } } },
+            { contacts: { some: { email: { contains: q, mode: 'insensitive' } } } },
+            { vacatures: { some: { title: { contains: q, mode: 'insensitive' } } } },
+          ],
+        }),
+      },
+      orderBy: { name: 'asc' },
+    })
     return NextResponse.json(companies)
   } catch (e) {
     console.error('GET /api/companies error:', e)

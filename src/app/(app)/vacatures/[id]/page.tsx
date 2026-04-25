@@ -64,7 +64,7 @@ export default async function VacatureDetailPage({ params }: { params: Params })
   if (!vacature) notFound()
 
   const [companies, users, archivedCandidates] = await Promise.all([
-    prisma.company.findMany({ orderBy: { name: 'asc' } }),
+    prisma.company.findMany({ where: { archived: false }, orderBy: { name: 'asc' } }),
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
     prisma.candidate.findMany({
       where: { vacatureId: id, archived: true },
