@@ -79,6 +79,37 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const { id } = await params
+    const body = await request.json()
+
+    const data = body.archived === true
+      ? {
+          archived: true,
+          archivedAt: new Date(),
+          archivedReason: body.archivedReason ?? null,
+          archivedNote: body.archivedNote ?? null,
+        }
+      : {
+          archived: false,
+          archivedAt: null,
+          archivedReason: null,
+          archivedNote: null,
+          stage: 10,
+        }
+
+    const candidate = await prisma.candidate.update({ where: { id }, data })
+    return NextResponse.json(candidate)
+  } catch (e) {
+    console.error('PATCH /api/candidates/[id] error:', e)
+    return NextResponse.json({ error: 'Update mislukt' }, { status: 500 })
+  }
+}
+
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -137,6 +137,13 @@ async function main() {
     }
   }
 
+  await prisma.settings.upsert({
+    where: { key: 'invoiceUrl' },
+    update: { value: 'https://secure20.e-boekhouden.nl/bh/inloggen.asp' },
+    create: { key: 'invoiceUrl', value: 'https://secure20.e-boekhouden.nl/bh/inloggen.asp' },
+  })
+  console.log('Settings: invoiceUrl aangemaakt')
+
   console.log('\nSeed geslaagd!')
 }
 

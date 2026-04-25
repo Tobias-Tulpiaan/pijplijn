@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { LayoutGrid, Users, Building2, Calendar, CheckSquare, LogOut } from 'lucide-react'
+import { LayoutGrid, Users, Building2, Calendar, CheckSquare, LogOut, Archive } from 'lucide-react'
 
 const menuItems = [
   { href: '/pijplijn', label: 'Pijplijn', icon: LayoutGrid },
-  { href: '/kandidaten', label: 'Kandidaten', icon: Users },
+  { href: '/pijplijn/lijst', label: 'Kandidaten', icon: Users },
   { href: '/opdrachtgevers', label: 'Opdrachtgevers', icon: Building2 },
-  { href: '/kalender', label: 'Kalender', icon: Calendar },
+  { href: '/pijplijn/kalender', label: 'Kalender', icon: Calendar },
   { href: '/taken', label: 'Taken', icon: CheckSquare },
+  { href: '/archief', label: 'Archief', icon: Archive },
 ]
 
 function initialen(name: string | null | undefined): string {
@@ -51,7 +52,10 @@ export function Sidebar({ user }: SidebarProps) {
       {/* Navigatie */}
       <nav className="flex-1 px-3 py-4 space-y-1">
         {menuItems.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + '/')
+          // Exacte match voor /pijplijn om te voorkomen dat subpaden ook actief markeren
+          const isActive = href === '/pijplijn'
+            ? pathname === '/pijplijn'
+            : pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}

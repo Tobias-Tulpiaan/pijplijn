@@ -15,12 +15,34 @@ const candidateInclude = {
   },
 } as const
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { searchParams } = new URL(request.url)
+  const owner = searchParams.get('owner') || undefined
+  const company = searchParams.get('company') || undefined
+  const stageStr = searchParams.get('stage')
+  const stage = stageStr ? parseInt(stageStr) : undefined
+  const q = searchParams.get('q') || undefined
+
+  const where = {
+    archived: false,
+    ...(owner && { owner: { name: owner } }),
+    ...(company && { company: { name: company } }),
+    ...(stage && !isNaN(stage) && { stage }),
+    ...(q && {
+      OR: [
+        { name: { contains: q, mode: 'insensitive' as const } },
+        { role: { contains: q, mode: 'insensitive' as const } },
+        { company: { name: { contains: q, mode: 'insensitive' as const } } },
+      ],
+    }),
+  }
+
   try {
     const candidates = await prisma.candidate.findMany({
+      where,
       include: candidateInclude,
       orderBy: { createdAt: 'desc' },
     })
@@ -54,11 +76,7 @@ export async function POST(request: Request) {
         linkedinUrl: linkedinUrl?.trim() || null,
         stage: 10,
         stageHistory: {
-          create: {
-            fromStage: 0,
-            toStage: 10,
-            changedById: ownerId,
-          },
+          create: { fromStage: 0, toStage: 10, changedById: ownerId },
         },
       },
       include: candidateInclude,

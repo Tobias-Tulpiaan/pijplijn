@@ -30,12 +30,16 @@ model Candidate {
   email        String?
   linkedinUrl  String?
   lastContact  DateTime?
-  stage        Int            @default(10)
-  notes        String?        @db.Text
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  tasks        Task[]
-  stageHistory StageHistory[]
+  stage          Int            @default(10)
+  notes          String?        @db.Text
+  archived       Boolean        @default(false)
+  archivedAt     DateTime?
+  archivedReason String?
+  archivedNote   String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  tasks          Task[]
+  stageHistory   StageHistory[]
 }
 
 model Company {
@@ -71,4 +75,11 @@ model StageHistory {
   changedBy   User      @relation(fields: [changedById], references: [id])
   changedAt   DateTime  @default(now())
   note        String?
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
 }
