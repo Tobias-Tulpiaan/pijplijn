@@ -44,16 +44,45 @@ export async function POST(request: Request) {
 
     if (!name?.trim()) return NextResponse.json({ error: 'Naam is verplicht' }, { status: 400 })
 
-    const company = await prisma.company.upsert({
-      where: { name: name.trim() },
-      update: {},
-      create: {
-        name: name.trim(),
-        customCode: customCode?.trim() || null,
-        contactPerson: contactPerson?.trim() || null,
-        contactEmail: contactEmail?.trim() || null,
-        contactPhone: contactPhone?.trim() || null,
-      },
+    const company = await prisma.$transaction(async (tx) => {
+      const created = await tx.company.upsert({
+        where: { name: name.trim() },
+        update: {},
+        create: {
+          name: name.trim(),
+          customCode: customCode?.trim() || null,
+          contactPerson: contactPerson?.trim() || null,
+          contactEmail: contactEmail?.trim() || null,
+          contactPhone: contactPhone?.trim() || null,
+        },
+      })
+
+      if (contactPerson?.trim()) {
+        const nameTrimmed  = contactPerson.trim()
+        const emailTrimmed = contactEmail?.trim() || null
+        const existing = await tx.contact.findFirst({
+          where: {
+            companyId: created.id,
+            OR: [
+              { name: nameTrimmed },
+              ...(emailTrimmed ? [{ email: emailTrimmed }] : []),
+            ],
+          },
+        })
+        if (!existing) {
+          await tx.contact.create({
+            data: {
+              name: nameTrimmed,
+              email: emailTrimmed,
+              phone: contactPhone?.trim() || null,
+              role: 'Hoofdcontact',
+              companyId: created.id,
+            },
+          })
+        }
+      }
+
+      return created
     })
 
     return NextResponse.json(company, { status: 201 })

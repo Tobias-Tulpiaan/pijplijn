@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, ChevronRight, ChevronLeft } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -70,6 +70,12 @@ export function NieuweVacatureDialog({ companies, users, currentUserId, defaultC
       setContactId('')
     } catch { setContacts([]) }
   }
+
+  // Load contacts when dialog opens with a preset company
+  useEffect(() => {
+    if (open && defaultCompanyId) loadContacts(defaultCompanyId)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   function handleCompanyChange(cId: string) {
     setCompanyId(cId)

@@ -162,6 +162,9 @@ export function BewerkOpdrachtgeverDialog({ company }: { company: Company }) {
                 <Label htmlFor="bo-tel">Telefoon</Label>
                 <Input id="bo-tel" value={contactTelefoon} onChange={(e) => setContactTelefoon(e.target.value)} />
               </div>
+              <p className="text-xs" style={{ color: '#6B6B6B' }}>
+                Wijzigingen in primaire contactgegevens worden ook bijgewerkt in de contactenlijst.
+              </p>
 
               <div className="flex items-center justify-between pt-2">
                 <Button

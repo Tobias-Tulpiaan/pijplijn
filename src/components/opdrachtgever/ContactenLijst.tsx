@@ -93,7 +93,13 @@ export function ContactenLijst({ companyId, initialContacts }: Props) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-medium" style={{ color: '#1A1A1A' }}>{c.name}</span>
                   {c.role && (
-                    <span className="text-xs italic" style={{ color: '#6B6B6B' }}>{c.role}</span>
+                    c.role === 'Hoofdcontact' ? (
+                      <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#CBAD74', color: '#1A1A1A' }}>
+                        Hoofdcontact
+                      </span>
+                    ) : (
+                      <span className="text-xs italic" style={{ color: '#6B6B6B' }}>{c.role}</span>
+                    )
                   )}
                 </div>
                 {c.email && (

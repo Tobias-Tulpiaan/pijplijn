@@ -30,15 +30,53 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (!name?.trim()) return NextResponse.json({ error: 'Naam is verplicht' }, { status: 400 })
 
-    const company = await prisma.company.update({
-      where: { id },
-      data: {
-        name: name.trim(),
-        customCode: customCode?.trim() || null,
-        contactPerson: contactPerson?.trim() || null,
-        contactEmail: contactEmail?.trim() || null,
-        contactPhone: contactPhone?.trim() || null,
-      },
+    const company = await prisma.$transaction(async (tx) => {
+      const updated = await tx.company.update({
+        where: { id },
+        data: {
+          name: name.trim(),
+          customCode: customCode?.trim() || null,
+          contactPerson: contactPerson?.trim() || null,
+          contactEmail: contactEmail?.trim() || null,
+          contactPhone: contactPhone?.trim() || null,
+        },
+      })
+
+      if (contactPerson?.trim()) {
+        const nameTrimmed  = contactPerson.trim()
+        const emailTrimmed = contactEmail?.trim() || null
+        const existing = await tx.contact.findFirst({
+          where: {
+            companyId: id,
+            OR: [
+              { name: nameTrimmed },
+              ...(emailTrimmed ? [{ email: emailTrimmed }] : []),
+            ],
+          },
+        })
+        if (existing) {
+          await tx.contact.update({
+            where: { id: existing.id },
+            data: {
+              name: nameTrimmed,
+              email: emailTrimmed,
+              phone: contactPhone?.trim() || null,
+            },
+          })
+        } else {
+          await tx.contact.create({
+            data: {
+              name: nameTrimmed,
+              email: emailTrimmed,
+              phone: contactPhone?.trim() || null,
+              role: 'Hoofdcontact',
+              companyId: id,
+            },
+          })
+        }
+      }
+
+      return updated
     })
 
     return NextResponse.json(company)

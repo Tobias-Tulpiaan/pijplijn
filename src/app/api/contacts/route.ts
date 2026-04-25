@@ -16,6 +16,11 @@ export async function GET(request: Request) {
     where: { companyId },
     orderBy: { name: 'asc' },
   })
+  contacts.sort((a, b) => {
+    const aMain = a.role === 'Hoofdcontact' ? 0 : 1
+    const bMain = b.role === 'Hoofdcontact' ? 0 : 1
+    return aMain - bMain
+  })
   return NextResponse.json(contacts)
 }
 
