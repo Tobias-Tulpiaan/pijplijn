@@ -86,6 +86,22 @@ export function TakenGroep({ variant, tasks, users }: Props) {
   const [saving,       setSaving]       = useState(false)
   const [topError,     setTopError]     = useState('')
   const [bewerkTask,   setBewerkTask]   = useState<Task | null>(null)
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set())
+
+  async function handleComplete(taskId: string) {
+    if (completingIds.has(taskId)) return
+    setCompletingIds(prev => { const s = new Set(prev); s.add(taskId); return s })
+    try {
+      await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: true }),
+      })
+      setTimeout(() => router.refresh(), 600)
+    } catch {
+      setCompletingIds(prev => { const s = new Set(prev); s.delete(taskId); return s })
+    }
+  }
 
   const s = variantStyles[variant]
 
@@ -229,9 +245,11 @@ export function TakenGroep({ variant, tasks, users }: Props) {
             )
           }
 
+          const isCompleting = completingIds.has(task.id)
+
           const contentArea = (
             <>
-              <p className="text-sm font-medium flex items-center gap-1.5" style={{ color: '#1A1A1A' }}>
+              <p className={`text-sm font-medium flex items-center gap-1.5 transition-all${isCompleting ? ' line-through opacity-50' : ''}`} style={{ color: '#1A1A1A' }}>
                 {task.title}
                 {task.isShared && <Users size={13} style={{ color: '#A68A52', flexShrink: 0 }} />}
               </p>
@@ -253,9 +271,22 @@ export function TakenGroep({ variant, tasks, users }: Props) {
           return (
             <div
               key={task.id}
-              className="group flex items-start justify-between gap-4 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow"
+              className={`group flex items-start justify-between gap-3 rounded-lg p-3 shadow-sm hover:shadow-md transition-all${isCompleting ? ' opacity-50' : ''}`}
               style={s.row}
             >
+              {/* Afvink-checkbox */}
+              <button
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleComplete(task.id) }}
+                className="flex-shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center transition-all"
+                style={{
+                  borderColor: isCompleting ? '#CBAD74' : '#d1d5db',
+                  backgroundColor: isCompleting ? '#CBAD74' : 'transparent',
+                }}
+                title="Afvinken"
+              >
+                {isCompleting && <Check size={10} style={{ color: '#1A1A1A' }} />}
+              </button>
+
               {isGeneral ? (
                 <div
                   className="flex-1 min-w-0 cursor-pointer"
