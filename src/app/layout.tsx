@@ -5,6 +5,11 @@ import { Providers } from "@/components/providers";
 export const metadata: Metadata = {
   title: "Tulpiaan Pijplijn",
   description: "Intern dashboard voor recruitment pijplijn",
+  icons: {
+    icon:     '/favicon.png',
+    shortcut: '/favicon.png',
+    apple:    '/favicon.png',
+  },
 };
 
 export default function RootLayout({

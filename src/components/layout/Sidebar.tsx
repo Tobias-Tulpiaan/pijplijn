@@ -72,25 +72,28 @@ export function Sidebar({ user, drawerOpen = false, onClose }: SidebarProps) {
       }}
     >
       {/* Logo + toggle */}
-      <div className="flex items-center border-b border-gray-100" style={{ height: 64, padding: isCollapsed ? '0 12px' : '0 24px' }}>
+      <div className="flex items-center border-b border-gray-100" style={{ height: 64, padding: isCollapsed ? '0 10px' : '0 16px' }}>
         {isCollapsed ? (
-          <div className="flex items-center justify-between w-full">
-            <span className="text-lg font-bold" style={{ color: '#CBAD74' }}>T</span>
-            <button onClick={toggle} className="p-1 rounded hover:bg-gray-100 hidden md:block" title="Sidebar uitklappen">
-              <ChevronRight size={16} style={{ color: '#6B6B6B' }} />
+          <div className="flex flex-col items-center gap-1 w-full">
+            <img src="/favicon.png" alt="Tulpiaan" width={28} height={28} />
+            <button onClick={toggle} className="p-0.5 rounded hover:bg-gray-100 hidden md:block" title="Sidebar uitklappen">
+              <ChevronRight size={14} style={{ color: '#6B6B6B' }} />
             </button>
           </div>
         ) : (
           <div className="flex items-center justify-between w-full">
-            <div>
-              <span className="text-2xl font-bold tracking-tight" style={{ color: '#CBAD74' }}>Tulpiaan</span>
-              <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Pijplijn Dashboard</p>
+            <div className="flex items-center gap-2 min-w-0">
+              <img src="/favicon.png" alt="Tulpiaan logo" width={30} height={30} className="flex-shrink-0" />
+              <div className="min-w-0">
+                <span className="text-xl font-bold tracking-tight" style={{ color: '#CBAD74' }}>Tulpiaan</span>
+                <p className="text-xs mt-0.5" style={{ color: '#6B6B6B' }}>Pijplijn Dashboard</p>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={toggle} className="p-1 rounded hover:bg-gray-100 flex-shrink-0 hidden md:block" title="Sidebar inklappen">
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button onClick={toggle} className="p-1 rounded hover:bg-gray-100 hidden md:block" title="Sidebar inklappen">
                 <ChevronLeft size={16} style={{ color: '#6B6B6B' }} />
               </button>
-              <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 flex-shrink-0 md:hidden" title="Menu sluiten">
+              <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 md:hidden" title="Menu sluiten">
                 <X size={16} style={{ color: '#6B6B6B' }} />
               </button>
             </div>

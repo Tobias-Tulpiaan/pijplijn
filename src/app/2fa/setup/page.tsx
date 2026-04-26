@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { signOut } from 'next-auth/react'
 import { Shield, Check, Copy, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,16 +10,16 @@ type Step = 'loading' | 'scan' | 'verify' | 'codes' | 'done'
 
 export default function TwoFactorSetupPage() {
 
-  const [step,         setStep]         = useState<Step>('loading')
-  const [qrDataUrl,    setQrDataUrl]    = useState('')
-  const [secret,       setSecret]       = useState('')
-  const [code,         setCode]         = useState('')
-  const [recoveryCodes,setRecoveryCodes]= useState<string[]>([])
-  const [confirmed,    setConfirmed]    = useState(false)
-  const [error,        setError]        = useState('')
-  const [loading,      setLoading]      = useState(false)
-  const [navigating,   setNavigating]   = useState(false)
-  const [copied,       setCopied]       = useState(false)
+  const [step,          setStep]         = useState<Step>('loading')
+  const [qrDataUrl,     setQrDataUrl]    = useState('')
+  const [secret,        setSecret]       = useState('')
+  const [code,          setCode]         = useState('')
+  const [recoveryCodes, setRecoveryCodes]= useState<string[]>([])
+  const [confirmed,     setConfirmed]    = useState(false)
+  const [error,         setError]        = useState('')
+  const [loading,       setLoading]      = useState(false)
+  const [navigating,    setNavigating]   = useState(false)
+  const [copied,        setCopied]       = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -59,7 +60,6 @@ export default function TwoFactorSetupPage() {
 
   async function handleDone() {
     setNavigating(true)
-    // Cookie is already refreshed server-side by verify-setup — just navigate
     window.location.href = '/pijplijn'
   }
 
@@ -79,7 +79,15 @@ export default function TwoFactorSetupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F5EE' }}>
+    <div className="min-h-screen flex items-center justify-center relative" style={{ backgroundColor: '#F8F5EE' }}>
+      <button
+        onClick={() => signOut({ callbackUrl: '/login' })}
+        className="absolute top-4 right-4 text-sm hover:underline"
+        style={{ color: '#6B6B6B', fontFamily: 'Aptos, Calibri, Arial, sans-serif' }}
+      >
+        Uitloggen
+      </button>
+
       <div className="w-full max-w-md rounded-2xl shadow-md p-8" style={{ backgroundColor: '#ffffff', fontFamily: 'Aptos, Calibri, Arial, sans-serif' }}>
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(203,173,116,0.15)' }}>
