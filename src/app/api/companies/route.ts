@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 export async function GET(request: Request) {
   const session = await auth()
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
       return created
     })
 
+    await logAction({ userId: session.user.id, action: 'company_create', entityType: 'company', entityId: company.id, request })
     return NextResponse.json(company, { status: 201 })
   } catch (e) {
     console.error('POST /api/companies error:', e)

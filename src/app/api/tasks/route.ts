@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       },
     })
 
+    await logAction({ userId: session.user.id, action: 'task_create', entityType: 'task', entityId: task.id, request })
     return NextResponse.json(task, { status: 201 })
   } catch (e) {
     console.error('POST /api/tasks error:', e)

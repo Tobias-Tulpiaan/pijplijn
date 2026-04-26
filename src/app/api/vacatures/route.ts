@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 const vacatureInclude = {
   company:    true,
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
       include: vacatureInclude,
     })
 
+    await logAction({ userId: session.user.id, action: 'vacature_create', entityType: 'vacature', entityId: vacature.id, request })
     return NextResponse.json(vacature, { status: 201 })
   } catch (e) {
     console.error('POST /api/vacatures error:', e)

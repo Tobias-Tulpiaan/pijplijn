@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 const candidateInclude = {
   owner: true,
@@ -75,6 +76,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       include: candidateInclude,
     })
 
+    const action = stageChanged ? 'candidate_stage_change' : 'candidate_update'
+    await logAction({ userId: session.user.id, action, entityType: 'candidate', entityId: id, metadata: stageChanged ? { from: existing.stage, to: body.stage } : null, request })
     return NextResponse.json(candidate)
   } catch (e) {
     console.error('PUT /api/candidates/[id] error:', e)
@@ -106,6 +109,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }
 
     const candidate = await prisma.candidate.update({ where: { id }, data })
+    const archiveAction = body.archived === true ? 'candidate_archive' : 'candidate_unarchive'
+    await logAction({ userId: session.user.id, action: archiveAction, entityType: 'candidate', entityId: id, request })
     return NextResponse.json(candidate)
   } catch (e) {
     console.error('PATCH /api/candidates/[id] error:', e)
@@ -120,6 +125,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params
     await prisma.candidate.delete({ where: { id } })
+    await logAction({ userId: session.user?.id, action: 'candidate_delete', entityType: 'candidate', entityId: id })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('DELETE /api/candidates/[id] error:', e)

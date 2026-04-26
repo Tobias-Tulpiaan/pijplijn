@@ -12,11 +12,16 @@ model User {
   email                 String         @unique
   name                  String
   passwordHash          String
+  totpSecret            String?
+  totpEnabled           Boolean        @default(false)
+  recoveryCodes         String[]
+  totpVerifiedAt        DateTime?
   createdAt             DateTime       @default(now())
   ownedCandidates       Candidate[]    @relation("CandidateOwner")
   tasks                 Task[]
   stageChanges          StageHistory[]
   vacaturesAsConsultant Vacature[]     @relation("VacatureConsultant")
+  auditLogs             AuditLog[]
 }
 
 model Candidate {
@@ -143,4 +148,21 @@ model Settings {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

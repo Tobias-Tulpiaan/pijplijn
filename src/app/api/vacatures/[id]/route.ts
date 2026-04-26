@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 const vacatureInclude = {
   company:    true,
@@ -76,6 +77,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
       include: vacatureInclude,
     })
+    await logAction({ userId: session.user.id, action: 'vacature_update', entityType: 'vacature', entityId: id, request })
     return NextResponse.json(vacature)
   } catch (e) {
     console.error('PUT /api/vacatures/[id] error:', e)
@@ -97,6 +99,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       )
     }
     await prisma.vacature.delete({ where: { id } })
+    await logAction({ userId: session.user?.id, action: 'vacature_delete', entityType: 'vacature', entityId: id })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('DELETE /api/vacatures/[id] error:', e)

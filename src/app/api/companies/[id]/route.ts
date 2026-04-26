@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -79,6 +80,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return updated
     })
 
+    await logAction({ userId: session.user.id, action: 'company_update', entityType: 'company', entityId: id, request })
     return NextResponse.json(company)
   } catch (e) {
     console.error('PUT /api/companies/[id] error:', e)
@@ -86,7 +88,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -108,6 +110,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     }
 
     await prisma.company.delete({ where: { id } })
+    await logAction({ userId: session.user.id, action: 'company_delete', entityType: 'company', entityId: id })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('DELETE /api/companies/[id] error:', e)
