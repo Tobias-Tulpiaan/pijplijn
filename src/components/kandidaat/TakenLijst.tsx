@@ -18,7 +18,8 @@ interface Task {
 }
 
 interface Props {
-  candidateId: string
+  candidateId?: string
+  companyId?: string
   tasks: Task[]
   users: { id: string; name: string }[]
   currentUserId: string
@@ -36,7 +37,7 @@ function initialen(name: string) {
   return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 }
 
-export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUserId }: Props) {
+export function TakenLijst({ candidateId, companyId, tasks: initialTasks, users, currentUserId }: Props) {
   const router = useRouter()
   const [tasks, setTasks] = useState(initialTasks)
   const [showForm, setShowForm] = useState(false)
@@ -151,7 +152,8 @@ export function TakenLijst({ candidateId, tasks: initialTasks, users, currentUse
           title:       newTitle.trim(),
           dueDate:     newDate || null,
           dueTime:     showTime ? (newTime.trim() || null) : null,
-          candidateId,
+          ...(candidateId ? { candidateId } : {}),
+          ...(companyId   ? { companyId }   : {}),
           assignedToId: newAssignee,
         }),
       })

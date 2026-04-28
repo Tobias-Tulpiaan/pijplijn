@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { CheckSquare } from 'lucide-react'
+import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { isToday, isTomorrow, isPast, addDays, startOfDay } from 'date-fns'
@@ -19,8 +20,10 @@ interface TaskWithRelations {
   completed: boolean
   isShared: boolean
   candidateId: string | null
+  companyId: string | null
   assignedToId: string | null
   candidate: { id: string; name: string; company: { name: string } | null } | null
+  company: { id: string; name: string } | null
   assignedTo: { id: string; name: string } | null
 }
 
@@ -85,12 +88,17 @@ export default async function TakenPage({ searchParams }: { searchParams: Search
   const filter  = params.filter ?? 'mijn'
   const q       = params.q ?? ''
 
-  const [users, candidates] = await Promise.all([
+  const [users, candidates, companies] = await Promise.all([
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
     prisma.candidate.findMany({
       where: { archived: false },
       orderBy: { name: 'asc' },
       select: { id: true, name: true, company: { select: { name: true } } },
+    }),
+    prisma.company.findMany({
+      where: { archived: false },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
     }),
   ])
 
@@ -113,6 +121,7 @@ export default async function TakenPage({ searchParams }: { searchParams: Search
       { title:     { contains: q, mode: 'insensitive' as const } },
       { candidate: { name:    { contains: q, mode: 'insensitive' as const } } },
       { candidate: { company: { name: { contains: q, mode: 'insensitive' as const } } } },
+      { company:   { name:    { contains: q, mode: 'insensitive' as const } } },
     ],
   } : {}
 
@@ -123,6 +132,7 @@ export default async function TakenPage({ searchParams }: { searchParams: Search
     orderBy: [{ dueDate: 'asc' }, { createdAt: 'asc' }],
     include: {
       candidate: { include: { company: true } },
+      company:   { select: { id: true, name: true } },
       assignedTo: { select: { id: true, name: true } },
     },
   }) as TaskWithRelations[]
@@ -151,9 +161,19 @@ export default async function TakenPage({ searchParams }: { searchParams: Search
   return (
     <div style={{ fontFamily: 'Aptos, Calibri, Arial, sans-serif' }}>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Taken</h1>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Taken</h1>
+          <Link
+            href="/taken/archief"
+            className="text-xs hover:underline"
+            style={{ color: '#9ca3af' }}
+          >
+            Bekijk archief →
+          </Link>
+        </div>
         <NieuweTaakDialog
           candidates={candidates}
+          companies={companies}
           users={users}
           currentUserId={session!.user.id}
         />
@@ -194,7 +214,7 @@ export default async function TakenPage({ searchParams }: { searchParams: Search
                       </span>
                       <span
                         className="text-xs px-1.5 py-0.5 rounded-full font-semibold"
-                        style={{ backgroundColor: GROUP_COLOR[g.key], color: g.key === 'vandaag' || g.key === 'morgen' ? '#fff' : g.key === 'verlopen' ? '#fff' : '#fff' }}
+                        style={{ backgroundColor: GROUP_COLOR[g.key], color: '#fff' }}
                       >
                         {g.tasks.length}
                       </span>

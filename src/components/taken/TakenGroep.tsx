@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
@@ -16,8 +16,10 @@ interface Task {
   completed: boolean
   isShared: boolean
   candidateId: string | null
+  companyId: string | null
   assignedToId: string | null
   candidate: { id: string; name: string; company: { name: string } | null } | null
+  company: { id: string; name: string } | null
   assignedTo: { id: string; name: string } | null
 }
 
@@ -87,8 +89,10 @@ export function TakenGroep({ variant, tasks, users }: Props) {
   const [topError,     setTopError]     = useState('')
   const [bewerkTask,   setBewerkTask]   = useState<Task | null>(null)
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set())
+  const [recentlyCompleted, setRecentlyCompleted] = useState<{ id: string; title: string } | null>(null)
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  async function handleComplete(taskId: string) {
+  async function handleComplete(taskId: string, taskTitle: string) {
     if (completingIds.has(taskId)) return
     setCompletingIds(prev => { const s = new Set(prev); s.add(taskId); return s })
     try {
@@ -97,10 +101,29 @@ export function TakenGroep({ variant, tasks, users }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: true }),
       })
-      setTimeout(() => router.refresh(), 600)
+      setRecentlyCompleted({ id: taskId, title: taskTitle })
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+      undoTimerRef.current = setTimeout(() => {
+        setRecentlyCompleted(null)
+        router.refresh()
+      }, 5000)
     } catch {
       setCompletingIds(prev => { const s = new Set(prev); s.delete(taskId); return s })
     }
+  }
+
+  async function handleUndo() {
+    if (!recentlyCompleted) return
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    const { id } = recentlyCompleted
+    setRecentlyCompleted(null)
+    setCompletingIds(prev => { const s = new Set(prev); s.delete(id); return s })
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: false }),
+    })
+    router.refresh()
   }
 
   const s = variantStyles[variant]
@@ -126,10 +149,10 @@ export function TakenGroep({ variant, tasks, users }: Props) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: editTitle.trim() || task.title,
-          dueDate: editDate || null,
-          dueTime: showEditTime ? (editTime.trim() || null) : null,
-          isShared: editIsShared,
+          title:       editTitle.trim() || task.title,
+          dueDate:     editDate || null,
+          dueTime:     showEditTime ? (editTime.trim() || null) : null,
+          isShared:    editIsShared,
           assignedToId: editIsShared ? null : (editAssignee || task.assignedToId),
         }),
       })
@@ -157,8 +180,10 @@ export function TakenGroep({ variant, tasks, users }: Props) {
 
       <div className="space-y-1.5">
         {tasks.map((task) => {
-          const isEditing = editingId === task.id
-          const isGeneral = !task.candidateId
+          const isEditing     = editingId === task.id
+          const isCandidateTask = !!task.candidateId
+          const isCompanyTask   = !task.candidateId && !!task.companyId
+          const isGeneral       = !task.candidateId && !task.companyId
 
           if (isEditing) {
             return (
@@ -261,9 +286,11 @@ export function TakenGroep({ variant, tasks, users }: Props) {
                       <span style={{ color: '#6B6B6B' }}> · {task.candidate.company.name}</span>
                     )}
                   </>
-                ) : (
-                  <span style={{ color: '#9ca3af' }}>Algemene taak</span>
-                )}
+                ) : task.company ? (
+                  <span style={{ color: '#A68A52' }}>Opdrachtgever: {task.company.name}</span>
+                ) : task.isShared ? (
+                  <span style={{ color: '#A68A52' }}>Gedeelde taak</span>
+                ) : null}
               </p>
             </>
           )
@@ -276,7 +303,7 @@ export function TakenGroep({ variant, tasks, users }: Props) {
             >
               {/* Afvink-checkbox */}
               <button
-                onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleComplete(task.id) }}
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); handleComplete(task.id, task.title) }}
                 className="flex-shrink-0 mt-0.5 w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center transition-all"
                 style={{
                   borderColor: isCompleting ? '#CBAD74' : '#d1d5db',
@@ -287,20 +314,27 @@ export function TakenGroep({ variant, tasks, users }: Props) {
                 {isCompleting && <Check size={10} style={{ color: '#1A1A1A' }} />}
               </button>
 
-              {isGeneral ? (
-                <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => setBewerkTask(task)}
-                >
-                  {contentArea}
-                </div>
-              ) : (
+              {isCandidateTask ? (
                 <Link
                   href={`/kandidaat/${task.candidateId}#takensectie`}
                   className="flex-1 min-w-0"
                 >
                   {contentArea}
                 </Link>
+              ) : isCompanyTask ? (
+                <Link
+                  href={`/opdrachtgevers/${task.companyId}`}
+                  className="flex-1 min-w-0"
+                >
+                  {contentArea}
+                </Link>
+              ) : (
+                <div
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => setBewerkTask(task)}
+                >
+                  {contentArea}
+                </div>
               )}
 
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -322,7 +356,7 @@ export function TakenGroep({ variant, tasks, users }: Props) {
                   )}
                 </div>
                 <button
-                  onClick={() => isGeneral ? setBewerkTask(task) : startEdit(task)}
+                  onClick={() => isCandidateTask ? startEdit(task) : setBewerkTask(task)}
                   className="opacity-0 group-hover:opacity-100 p-1.5 rounded hover:bg-gray-100 transition-opacity"
                   style={{ color: '#A68A52' }}
                   title="Bewerken"
@@ -340,6 +374,20 @@ export function TakenGroep({ variant, tasks, users }: Props) {
         onClose={() => { setBewerkTask(null); router.refresh() }}
         users={users}
       />
+
+      {recentlyCompleted && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm"
+          style={{ backgroundColor: '#1A1A1A', color: '#fff' }}>
+          <span>Taak afgevinkt</span>
+          <button
+            onClick={handleUndo}
+            className="underline font-medium"
+            style={{ color: '#CBAD74' }}
+          >
+            Ongedaan maken
+          </button>
+        </div>
+      )}
     </div>
   )
 }

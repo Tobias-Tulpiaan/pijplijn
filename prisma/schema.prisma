@@ -18,7 +18,8 @@ model User {
   totpVerifiedAt        DateTime?
   createdAt             DateTime       @default(now())
   ownedCandidates       Candidate[]    @relation("CandidateOwner")
-  tasks                 Task[]
+  tasks                 Task[]         @relation("AssignedTasks")
+  completedTasks        Task[]         @relation("CompletedTasks")
   stageChanges          StageHistory[]
   vacaturesAsConsultant Vacature[]     @relation("VacatureConsultant")
   auditLogs             AuditLog[]
@@ -65,6 +66,7 @@ model Company {
   candidates    Candidate[]
   contacts      Contact[]
   vacatures     Vacature[]
+  tasks         Task[]
   createdAt     DateTime    @default(now())
 }
 
@@ -117,18 +119,23 @@ model Vacature {
 }
 
 model Task {
-  id           String     @id @default(cuid())
-  title        String
-  description  String?
-  dueDate      DateTime?
-  dueTime      String?
-  completed    Boolean    @default(false)
-  isShared     Boolean    @default(false)
-  candidateId  String?
-  candidate    Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
-  assignedToId String?
-  assignedTo   User?      @relation(fields: [assignedToId], references: [id])
-  createdAt    DateTime   @default(now())
+  id            String     @id @default(cuid())
+  title         String
+  description   String?
+  dueDate       DateTime?
+  dueTime       String?
+  completed     Boolean    @default(false)
+  completedAt   DateTime?
+  isShared      Boolean    @default(false)
+  candidateId   String?
+  candidate     Candidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  companyId     String?
+  company       Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  assignedToId  String?
+  assignedTo    User?      @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  completedById String?
+  completedBy   User?      @relation("CompletedTasks", fields: [completedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime   @default(now())
 }
 
 model StageHistory {

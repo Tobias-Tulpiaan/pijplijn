@@ -12,8 +12,12 @@ interface Task {
   dueDate: Date | null
   dueTime: string | null
   isShared: boolean
+  candidateId?: string | null
   assignedToId: string | null
   assignedTo: { id: string; name: string } | null
+  companyId?: string | null
+  company?: { id: string; name: string } | null
+  candidate?: { id: string; name: string } | null
 }
 
 interface Props {
@@ -61,10 +65,10 @@ export function BewerkTaakDialog({ task, onClose, users }: Props) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim(),
+          title:       title.trim(),
           description: description.trim() || null,
-          dueDate: dueDate || null,
-          dueTime: showTime ? (dueTime.trim() || null) : null,
+          dueDate:     dueDate || null,
+          dueTime:     showTime ? (dueTime.trim() || null) : null,
           isShared,
           assignedToId: isShared ? null : (assignedTo || null),
         }),
@@ -97,6 +101,8 @@ export function BewerkTaakDialog({ task, onClose, users }: Props) {
     }
   }
 
+  const hasKoppeling = task.candidateId || task.companyId
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -117,6 +123,16 @@ export function BewerkTaakDialog({ task, onClose, users }: Props) {
         {error && (
           <div className="mb-3 px-3 py-2 rounded text-xs border" style={{ backgroundColor: '#fef2f2', color: '#991b1b', borderColor: '#fecaca' }}>
             {error}
+          </div>
+        )}
+
+        {hasKoppeling && (
+          <div className="mb-3 px-3 py-2 rounded text-xs" style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', color: '#6B6B6B' }}>
+            {task.company ? (
+              <>Opdrachtgever: <span className="font-medium" style={{ color: '#1A1A1A' }}>{task.company.name}</span></>
+            ) : task.candidate ? (
+              <>Kandidaat: <span className="font-medium" style={{ color: '#1A1A1A' }}>{task.candidate.name}</span></>
+            ) : null}
           </div>
         )}
 

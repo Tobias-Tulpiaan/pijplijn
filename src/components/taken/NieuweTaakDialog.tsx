@@ -4,35 +4,54 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, X, Clock } from 'lucide-react'
 
+type KoppelingType = 'persoonlijk' | 'kandidaat' | 'opdrachtgever' | 'gedeeld'
+
 interface Props {
-  candidates:    { id: string; name: string; company: { name: string } | null }[]
-  users:         { id: string; name: string }[]
-  currentUserId: string
+  candidates:      { id: string; name: string; company: { name: string } | null }[]
+  companies:       { id: string; name: string }[]
+  users:           { id: string; name: string }[]
+  currentUserId:   string
+  defaultCompanyId?: string
 }
 
-export function NieuweTaakDialog({ candidates, users, currentUserId }: Props) {
+export function NieuweTaakDialog({ candidates, companies, users, currentUserId, defaultCompanyId }: Props) {
   const router    = useRouter()
   const [open, setOpen] = useState(false)
 
   const [title,       setTitle]       = useState('')
   const [description, setDescription] = useState('')
+  const [koppeling,   setKoppeling]   = useState<KoppelingType>('persoonlijk')
   const [candidateId, setCandidateId] = useState('')
+  const [companyId,   setCompanyId]   = useState('')
   const [dueDate,     setDueDate]     = useState('')
   const [showTime,    setShowTime]    = useState(false)
   const [dueTime,     setDueTime]     = useState('')
-  const [isShared,    setIsShared]    = useState(false)
   const [assignedTo,  setAssignedTo]  = useState(currentUserId)
   const [saving,      setSaving]      = useState(false)
   const [error,       setError]       = useState('')
 
   function openDialog() {
-    setTitle(''); setDescription(''); setCandidateId(''); setDueDate('')
-    setShowTime(false); setDueTime(''); setIsShared(false)
-    setAssignedTo(currentUserId); setError('')
+    setTitle(''); setDescription(''); setDueDate('')
+    setShowTime(false); setDueTime(''); setError('')
+    setAssignedTo(currentUserId)
+    setCandidateId('')
+    if (defaultCompanyId) {
+      setKoppeling('opdrachtgever')
+      setCompanyId(defaultCompanyId)
+    } else {
+      setKoppeling('persoonlijk')
+      setCompanyId('')
+    }
     setOpen(true)
   }
 
   function closeDialog() { setOpen(false) }
+
+  function handleKoppelingChange(val: KoppelingType) {
+    setKoppeling(val)
+    setCandidateId('')
+    setCompanyId('')
+  }
 
   async function handleSave() {
     if (!title.trim()) { setError('Titel is verplicht'); return }
@@ -43,13 +62,14 @@ export function NieuweTaakDialog({ candidates, users, currentUserId }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim(),
+          title:       title.trim(),
           description: description.trim() || null,
-          candidateId: candidateId || null,
-          dueDate: dueDate || null,
-          dueTime: showTime ? (dueTime.trim() || null) : null,
-          isShared,
-          assignedToId: isShared ? null : assignedTo,
+          candidateId: koppeling === 'kandidaat'     ? (candidateId || null) : null,
+          companyId:   koppeling === 'opdrachtgever' ? (companyId   || null) : null,
+          dueDate:     dueDate || null,
+          dueTime:     showTime ? (dueTime.trim() || null) : null,
+          isShared:    koppeling === 'gedeeld',
+          assignedToId: koppeling === 'gedeeld' ? null : assignedTo,
         }),
       })
       if (!res.ok) {
@@ -115,21 +135,55 @@ export function NieuweTaakDialog({ candidates, users, currentUserId }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: '#6B6B6B' }}>Kandidaat</label>
+                <label className="block text-xs font-medium mb-1" style={{ color: '#6B6B6B' }}>Soort taak</label>
                 <select
-                  value={candidateId}
-                  onChange={(e) => setCandidateId(e.target.value)}
+                  value={koppeling}
+                  onChange={(e) => handleKoppelingChange(e.target.value as KoppelingType)}
                   className="w-full px-3 py-2 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
-                  disabled={saving}
+                  disabled={saving || !!defaultCompanyId}
                 >
-                  <option value="">— Geen kandidaat (algemene taak) —</option>
-                  {candidates.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}{c.company ? ` · ${c.company.name}` : ''}
-                    </option>
-                  ))}
+                  <option value="persoonlijk">Persoonlijk (zonder koppeling)</option>
+                  <option value="kandidaat">Bij kandidaat</option>
+                  <option value="opdrachtgever">Bij opdrachtgever</option>
+                  <option value="gedeeld">Gedeeld met team</option>
                 </select>
               </div>
+
+              {koppeling === 'kandidaat' && (
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#6B6B6B' }}>Kandidaat</label>
+                  <select
+                    value={candidateId}
+                    onChange={(e) => setCandidateId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+                    disabled={saving}
+                  >
+                    <option value="">— Selecteer kandidaat —</option>
+                    {candidates.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.company ? ` · ${c.company.name}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {koppeling === 'opdrachtgever' && (
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: '#6B6B6B' }}>Opdrachtgever</label>
+                  <select
+                    value={companyId}
+                    onChange={(e) => setCompanyId(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-md border border-gray-200 outline-none focus:border-[#CBAD74]"
+                    disabled={saving || !!defaultCompanyId}
+                  >
+                    <option value="">— Selecteer opdrachtgever —</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: '#6B6B6B' }}>Omschrijving</label>
@@ -181,20 +235,7 @@ export function NieuweTaakDialog({ candidates, users, currentUserId }: Props) {
                 </div>
               </div>
 
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isShared}
-                    onChange={(e) => setIsShared(e.target.checked)}
-                    disabled={saving}
-                    className="rounded"
-                  />
-                  <span className="text-sm" style={{ color: '#1A1A1A' }}>👥 Gedeelde taak (voor heel team)</span>
-                </label>
-              </div>
-
-              {!isShared && (
+              {koppeling !== 'gedeeld' && (
                 <div>
                   <label className="block text-xs font-medium mb-1" style={{ color: '#6B6B6B' }}>Toegewezen aan</label>
                   <select

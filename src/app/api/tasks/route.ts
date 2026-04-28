@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { title, description, dueDate, dueTime, candidateId, assignedToId, isShared } = body
+    const { title, description, dueDate, dueTime, candidateId, companyId, assignedToId, isShared } = body
 
     if (!title?.trim()) return NextResponse.json({ error: 'Titel is verplicht' }, { status: 400 })
     if (dueTime && !/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(dueTime)) {
@@ -20,21 +20,33 @@ export async function POST(request: Request) {
 
     const task = await prisma.task.create({
       data: {
-        title: title.trim(),
+        title:       title.trim(),
         description: description?.trim() || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        dueTime: dueTime?.trim() || null,
-        isShared: isShared === true,
+        dueDate:     dueDate ? new Date(dueDate) : null,
+        dueTime:     dueTime?.trim() || null,
+        isShared:    isShared === true,
         candidateId: candidateId || null,
+        companyId:   companyId  || null,
         assignedToId: isShared ? null : (assignedToId || session.user.id),
       },
       include: {
         assignedTo: { select: { id: true, name: true } },
-        candidate: { select: { id: true, name: true, company: { select: { name: true } } } },
+        candidate:  { select: { id: true, name: true, company: { select: { name: true } } } },
+        company:    { select: { id: true, name: true } },
       },
     })
 
-    await logAction({ userId: session.user.id, action: 'task_create', entityType: 'task', entityId: task.id, request })
+    await logAction({
+      userId: session.user.id,
+      action: 'create_task',
+      entityType: 'task',
+      entityId: task.id,
+      metadata: {
+        candidateId: candidateId || null,
+        companyId:   companyId   || null,
+      },
+      request,
+    })
     return NextResponse.json(task, { status: 201 })
   } catch (e) {
     console.error('POST /api/tasks error:', e)

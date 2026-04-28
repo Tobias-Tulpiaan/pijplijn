@@ -9,6 +9,7 @@ import { PijplijnBoard } from '@/components/pijplijn/PijplijnBoard'
 import { BewerkOpdrachtgeverDialog } from '@/components/opdrachtgever/BewerkOpdrachtgeverDialog'
 import { ContactenLijst } from '@/components/opdrachtgever/ContactenLijst'
 import { NieuweVacatureDialog } from '@/components/vacature/NieuweVacatureDialog'
+import { TakenLijst } from '@/components/kandidaat/TakenLijst'
 import { VACATURE_STATUS } from '@/types'
 import { getCompanyCode } from '@/lib/companyCode'
 
@@ -28,6 +29,10 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
           _count: { select: { candidates: true } },
         },
         orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      },
+      tasks: {
+        include: { assignedTo: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
       },
       candidates: {
         include: {
@@ -145,6 +150,19 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
             })}
           </div>
         )}
+      </div>
+
+      {/* Taken */}
+      <div className="rounded-xl p-6 mb-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+        <h2 className="text-base font-semibold mb-3" style={{ color: '#A68A52' }}>
+          Taken ({company.tasks.length})
+        </h2>
+        <TakenLijst
+          companyId={company.id}
+          tasks={company.tasks}
+          users={users}
+          currentUserId={session!.user.id}
+        />
       </div>
 
       {/* Mini kanban */}
