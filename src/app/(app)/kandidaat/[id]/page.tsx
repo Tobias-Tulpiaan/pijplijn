@@ -18,6 +18,7 @@ import { DatumsAanpassenDialog } from '@/components/kandidaat/DatumsAanpassenDia
 import { getSetting } from '@/lib/settings'
 import { VACATURE_STATUS } from '@/types'
 import { getCompanyCode } from '@/lib/companyCode'
+import { WhatsappButton } from '@/components/whatsapp/WhatsappButton'
 
 type Params = Promise<{ id: string }>
 
@@ -185,10 +186,23 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
                   </a>
                 )}
                 {candidate.phone && (
-                  <a href={`tel:${candidate.phone}`} className="flex items-center gap-2 text-sm hover:underline" style={{ color: '#1A1A1A' }}>
-                    <Phone size={14} style={{ color: '#CBAD74' }} />
-                    {candidate.phone}
-                  </a>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a href={`tel:${candidate.phone}`} className="flex items-center gap-2 text-sm hover:underline" style={{ color: '#1A1A1A' }}>
+                      <Phone size={14} style={{ color: '#CBAD74' }} />
+                      {candidate.phone}
+                    </a>
+                    <WhatsappButton
+                      phone={candidate.phone}
+                      recipientName={candidate.name}
+                      recipientType="candidate"
+                      recipientId={candidate.id}
+                      context={{
+                        opdrachtgever: candidate.company?.name,
+                        vacature: candidate.vacature?.title,
+                        functie: candidate.role,
+                      }}
+                    />
+                  </div>
                 )}
                 {candidate.linkedinUrl && (
                   <a href={candidate.linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm hover:underline" style={{ color: '#1A1A1A' }}>

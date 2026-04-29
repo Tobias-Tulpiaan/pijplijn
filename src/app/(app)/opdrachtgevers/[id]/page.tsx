@@ -104,7 +104,7 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
       {/* Contactpersonen */}
       <div className="rounded-xl p-6 mb-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
         <h2 className="text-base font-semibold mb-3" style={{ color: '#A68A52' }}>Contactpersonen</h2>
-        <ContactenLijst companyId={company.id} initialContacts={company.contacts} />
+        <ContactenLijst companyId={company.id} companyName={company.name} initialContacts={company.contacts} />
       </div>
 
       {/* Vacatures */}

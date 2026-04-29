@@ -52,7 +52,19 @@
       "PowerShell(npx prisma generate 2>&1 | Select-Object -Last 2)",
       "PowerShell(node -e \"const { PrismaClient } = require\\('@prisma/client'\\); const p = new PrismaClient\\(\\); console.log\\('AuditLog:', typeof p.auditLog\\); console.log\\('User.totpEnabled:', typeof p.user\\)\" 2>&1)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('version'\\), d.get\\('main'\\), d.get\\('exports', {}\\).keys\\(\\)\\)\")",
-      "Bash(echo \"Dev server gestart, PID: $!\")"
+      "Bash(echo \"Dev server gestart, PID: $!\")",
+      "PowerShell(npm run *)",
+      "PowerShell(cd C:\\\\dev\\\\Tulpiaan-pijplijn; npx next build 2>&1; echo \"EXIT:$LASTEXITCODE\")",
+      "PowerShell(cd C:\\\\dev\\\\Tulpiaan-pijplijn; npx tsc --noEmit 2>&1; echo \"TSC EXIT:$LASTEXITCODE\")",
+      "PowerShell(cd C:\\\\dev\\\\Tulpiaan-pijplijn; npx prisma migrate dev --name task_company_completed_by --create-only 2>&1; echo \"EXIT:$LASTEXITCODE\")",
+      "PowerShell(cd C:\\\\dev\\\\Tulpiaan-pijplijn; npx prisma migrate resolve --applied 20260428120000_task_company_completed_by 2>&1; echo \"EXIT:$LASTEXITCODE\")",
+      "PowerShell(cd C:\\\\dev\\\\Tulpiaan-pijplijn; npx prisma migrate status 2>&1; echo \"EXIT:$LASTEXITCODE\")",
+      "WebSearch",
+      "Bash(claude mcp *)",
+      "PowerShell($url = \\(Get-Content .env.local | Where-Object { $_ -match '^DATABASE_URL=' }\\) -replace '^DATABASE_URL=\"?\\([^\"]+\\)\"?$','$1'; $env:DATABASE_URL = $url; npx prisma migrate dev 2>&1)",
+      "PowerShell(Get-Content .env.production.local -Encoding Byte | Select-Object -First 6 | ForEach-Object { '0x{0:X2}' -f $_ })",
+      "Bash(npx dotenv *)",
+      "Bash(npx dotenv-cli *)"
     ]
   }
 }

@@ -8,21 +8,23 @@ datasource db {
 }
 
 model User {
-  id                    String         @id @default(cuid())
-  email                 String         @unique
+  id                    String              @id @default(cuid())
+  email                 String              @unique
   name                  String
   passwordHash          String
   totpSecret            String?
-  totpEnabled           Boolean        @default(false)
+  totpEnabled           Boolean             @default(false)
   recoveryCodes         String[]
   totpVerifiedAt        DateTime?
-  createdAt             DateTime       @default(now())
-  ownedCandidates       Candidate[]    @relation("CandidateOwner")
-  tasks                 Task[]         @relation("AssignedTasks")
-  completedTasks        Task[]         @relation("CompletedTasks")
+  createdAt             DateTime            @default(now())
+  ownedCandidates       Candidate[]         @relation("CandidateOwner")
+  tasks                 Task[]              @relation("AssignedTasks")
+  completedTasks        Task[]              @relation("CompletedTasks")
   stageChanges          StageHistory[]
-  vacaturesAsConsultant Vacature[]     @relation("VacatureConsultant")
+  vacaturesAsConsultant Vacature[]          @relation("VacatureConsultant")
   auditLogs             AuditLog[]
+  whatsappTemplates     WhatsappTemplate[]
+  whatsappMessages      WhatsappMessage[]
 }
 
 model Candidate {
@@ -155,6 +157,40 @@ model Settings {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+model WhatsappTemplate {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  body        String            @db.Text
+  category    String?
+  variables   String[]
+  active      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  createdById String?
+  createdBy   User?             @relation(fields: [createdById], references: [id])
+  messages    WhatsappMessage[]
+
+  @@index([category, active])
+}
+
+model WhatsappMessage {
+  id             String            @id @default(cuid())
+  templateId     String?
+  template       WhatsappTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  recipientType  String
+  recipientId    String
+  recipientName  String
+  recipientPhone String
+  body           String            @db.Text
+  sentById       String
+  sentBy         User              @relation(fields: [sentById], references: [id])
+  sentAt         DateTime          @default(now())
+
+  @@index([recipientType, recipientId])
+  @@index([sentById, sentAt])
 }
 
 model AuditLog {

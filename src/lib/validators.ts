@@ -68,3 +68,10 @@ export const contactSchema = z.object({
   notes: z.string().nullable().optional(),
   companyId: z.string().min(1),
 })
+
+export const whatsappTemplateSchema = z.object({
+  name: z.string().min(2).max(100),
+  description: z.string().max(500).optional(),
+  body: z.string().min(5).max(2000),
+  category: z.enum(['algemeen', 'kandidaat', 'contact']).optional(),
+})

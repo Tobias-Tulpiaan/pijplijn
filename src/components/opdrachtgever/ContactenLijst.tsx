@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { BewerkContactDialog } from './BewerkContactDialog'
+import { WhatsappButton } from '@/components/whatsapp/WhatsappButton'
 
 interface Contact {
   id: string
@@ -20,10 +21,11 @@ interface Contact {
 
 interface Props {
   companyId: string
+  companyName?: string
   initialContacts: Contact[]
 }
 
-export function ContactenLijst({ companyId, initialContacts }: Props) {
+export function ContactenLijst({ companyId, companyName, initialContacts }: Props) {
   const router = useRouter()
   const [contacts, setContacts] = useState<Contact[]>(initialContacts)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
@@ -108,9 +110,18 @@ export function ContactenLijst({ companyId, initialContacts }: Props) {
                   </a>
                 )}
                 {c.phone && (
-                  <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-xs hover:underline" style={{ color: '#1A1A1A' }}>
-                    <Phone size={11} style={{ color: '#CBAD74' }} />{c.phone}
-                  </a>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-xs hover:underline" style={{ color: '#1A1A1A' }}>
+                      <Phone size={11} style={{ color: '#CBAD74' }} />{c.phone}
+                    </a>
+                    <WhatsappButton
+                      phone={c.phone}
+                      recipientName={c.name}
+                      recipientType="contact"
+                      recipientId={c.id}
+                      context={{ opdrachtgever: companyName }}
+                    />
+                  </div>
                 )}
                 {c.notes && (
                   <p className="text-xs" style={{ color: '#9ca3af' }}>{c.notes}</p>

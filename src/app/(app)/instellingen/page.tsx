@@ -8,6 +8,7 @@ import { getSetting } from '@/lib/settings'
 import { InvoiceUrlForm } from '@/components/instellingen/InvoiceUrlForm'
 import { WachtwoordForm } from '@/components/instellingen/WachtwoordForm'
 import { TwoFactorSection } from '@/components/instellingen/TwoFactorSection'
+import { WhatsappTemplatesSection } from '@/components/whatsapp/WhatsappTemplatesSection'
 
 export default async function InstellingenPage() {
   const session    = await auth()
@@ -19,6 +20,12 @@ export default async function InstellingenPage() {
         select: { totpEnabled: true, totpVerifiedAt: true },
       })
     : null
+
+  const whatsappTemplates = await prisma.whatsappTemplate.findMany({
+    where:   { active: true },
+    include: { _count: { select: { messages: true } } },
+    orderBy: { createdAt: 'asc' },
+  })
 
   return (
     <div style={{ fontFamily: 'Aptos, Calibri, Arial, sans-serif', maxWidth: 640 }}>
@@ -59,6 +66,12 @@ export default async function InstellingenPage() {
             totpEnabled={dbUser?.totpEnabled ?? false}
             totpVerifiedAt={dbUser?.totpVerifiedAt ?? null}
           />
+        </div>
+
+        {/* WhatsApp templates */}
+        <div className="rounded-lg p-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+          <h2 className="text-base font-semibold mb-4" style={{ color: '#A68A52' }}>WhatsApp templates</h2>
+          <WhatsappTemplatesSection initialTemplates={whatsappTemplates} />
         </div>
 
         {/* Audit log */}
