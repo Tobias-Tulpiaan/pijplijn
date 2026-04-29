@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -49,6 +50,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       )
     }
 
+    await logAction({ userId: session.user.id, action: 'update_dates', entityType: 'candidate', entityId: id, request })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('PUT /api/candidates/[id]/dates error:', e)

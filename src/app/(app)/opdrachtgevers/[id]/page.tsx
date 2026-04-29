@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Mail, Phone } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, Activity } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { PijplijnBoard } from '@/components/pijplijn/PijplijnBoard'
@@ -12,6 +12,8 @@ import { NieuweVacatureDialog } from '@/components/vacature/NieuweVacatureDialog
 import { TakenLijst } from '@/components/kandidaat/TakenLijst'
 import { VACATURE_STATUS } from '@/types'
 import { getCompanyCode } from '@/lib/companyCode'
+import { getCompanyActivity } from '@/lib/activityFeed'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 
 type Params = Promise<{ id: string }>
 
@@ -54,9 +56,10 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
 
   if (!company) notFound()
 
-  const [users, allCompanies] = await Promise.all([
+  const [users, allCompanies, activity] = await Promise.all([
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
     prisma.company.findMany({ where: { archived: false }, orderBy: { name: 'asc' } }),
+    getCompanyActivity(id, 50),
   ])
 
   return (
@@ -182,6 +185,15 @@ export default async function OpdrachtgeverDetailPage({ params }: { params: Para
       ) : (
         <PijplijnBoard initialCandidates={company.candidates} users={users} />
       )}
+
+      {/* Activiteit */}
+      <div className="mt-6 rounded-xl p-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+        <h2 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: '#A68A52' }}>
+          <Activity size={16} />
+          Activiteit
+        </h2>
+        <ActivityFeed events={activity} emptyMessage="Nog geen activiteit voor deze opdrachtgever" />
+      </div>
     </div>
   )
 }

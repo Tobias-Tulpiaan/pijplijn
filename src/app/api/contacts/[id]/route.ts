@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { logAction } from '@/lib/auditLog'
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -22,6 +23,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json()
     if (!body.name?.trim()) return NextResponse.json({ error: 'Naam is verplicht' }, { status: 400 })
 
+    const existing = await prisma.contact.findUnique({ where: { id }, select: { companyId: true } })
     const contact = await prisma.contact.update({
       where: { id },
       data: {
@@ -32,6 +34,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         notes: body.notes?.trim() || null,
       },
     })
+    await logAction({ userId: session.user.id, action: 'update_contact', entityType: 'contact', entityId: id, metadata: { companyId: existing?.companyId ?? null }, request })
     return NextResponse.json(contact)
   } catch (e) {
     console.error('PUT /api/contacts/[id] error:', e)
@@ -45,6 +48,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   try {
     const { id } = await params
+    const contact = await prisma.contact.findUnique({ where: { id }, select: { companyId: true } })
     const linked = await prisma.candidate.count({ where: { contactId: id } })
     if (linked > 0) {
       return NextResponse.json(
@@ -53,6 +57,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
       )
     }
     await prisma.contact.delete({ where: { id } })
+    await logAction({ userId: session.user.id, action: 'delete_contact', entityType: 'contact', entityId: id, metadata: { companyId: contact?.companyId ?? null }, request: _req })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('DELETE /api/contacts/[id] error:', e)

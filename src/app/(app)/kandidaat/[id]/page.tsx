@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
-import { ArrowLeft, Mail, Phone, ExternalLink, Building2, Calendar, FileText, CalendarPlus, Archive } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, ExternalLink, Building2, Calendar, FileText, CalendarPlus, Archive, Activity } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { STAGE_LABEL } from '@/types'
@@ -19,6 +19,8 @@ import { getSetting } from '@/lib/settings'
 import { VACATURE_STATUS } from '@/types'
 import { getCompanyCode } from '@/lib/companyCode'
 import { WhatsappButton } from '@/components/whatsapp/WhatsappButton'
+import { getCandidateActivity } from '@/lib/activityFeed'
+import { ActivityFeed } from '@/components/activity/ActivityFeed'
 
 type Params = Promise<{ id: string }>
 
@@ -71,10 +73,11 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
 
   if (!candidate) notFound()
 
-  const [companies, users, invoiceUrl] = await Promise.all([
+  const [companies, users, invoiceUrl, activity] = await Promise.all([
     prisma.company.findMany({ orderBy: { name: 'asc' } }),
     prisma.user.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
     getSetting('invoiceUrl', 'https://secure20.e-boekhouden.nl/bh/inloggen.asp'),
+    getCandidateActivity(id, 50),
   ])
 
   const gesprekStages = [30, 40, 50]
@@ -170,7 +173,7 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
         )}
       </p>
 
-      {/* 2-kolommen grid */}
+      {/* 2-kolommen grid + activiteit */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* LINKS */}
         <div className="space-y-4">
@@ -411,6 +414,15 @@ export default async function KandidaatDetailPage({ params }: { params: Params }
             </InfoCard>
           )}
         </div>
+      </div>
+
+      {/* Activiteit */}
+      <div className="mt-6 rounded-lg p-6 shadow-sm border border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+        <h2 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: '#A68A52' }}>
+          <Activity size={16} />
+          Activiteit
+        </h2>
+        <ActivityFeed events={activity} emptyMessage="Nog geen activiteit voor deze kandidaat" />
       </div>
     </div>
   )

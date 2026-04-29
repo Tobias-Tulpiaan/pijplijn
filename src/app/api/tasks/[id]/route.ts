@@ -52,9 +52,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     })
 
     if (completingNow) {
-      await logAction({ userId: session.user.id, action: 'complete_task', entityType: 'task', entityId: id, request })
+      await logAction({ userId: session.user.id, action: 'complete_task', entityType: 'task', entityId: id, metadata: { candidateId: task.candidateId ?? null, companyId: task.companyId ?? null }, request })
     } else if (reactivating) {
-      await logAction({ userId: session.user.id, action: 'reactivate_task', entityType: 'task', entityId: id, request })
+      await logAction({ userId: session.user.id, action: 'reactivate_task', entityType: 'task', entityId: id, metadata: { candidateId: task.candidateId ?? null, companyId: task.companyId ?? null }, request })
     }
 
     return NextResponse.json(task)
@@ -70,8 +70,9 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   try {
     const { id } = await params
+    const task = await prisma.task.findUnique({ where: { id }, select: { candidateId: true, companyId: true } })
     await prisma.task.delete({ where: { id } })
-    await logAction({ userId: session.user.id, action: 'delete_task', entityType: 'task', entityId: id, request: _req })
+    await logAction({ userId: session.user.id, action: 'delete_task', entityType: 'task', entityId: id, metadata: { candidateId: task?.candidateId ?? null, companyId: task?.companyId ?? null }, request: _req })
     return NextResponse.json({ ok: true })
   } catch (e) {
     console.error('DELETE /api/tasks/[id] error:', e)
