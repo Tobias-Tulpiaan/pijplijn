@@ -187,7 +187,7 @@ Regels:
 HTML:
 ${rawInput.slice(0, 50000)}`
 
-  const text = await callClaude({ userPrompt: prompt1, temperature: 0.2, maxTokens: 8000 })
+  const text = await callClaude({ userPrompt: prompt1, maxTokens: 8000 })
 
   try {
     return parseClaudeJson<AnalysisResult>(text)
@@ -195,7 +195,6 @@ ${rawInput.slice(0, 50000)}`
     // één retry met expliciete JSON-instructie
     const retry = await callClaude({
       userPrompt: `${prompt1}\n\nBelangrijk: geef uitsluitend geldige JSON terug, geen markdown omheen.`,
-      temperature: 0.1,
       maxTokens: 8000,
     })
     return parseClaudeJson<AnalysisResult>(retry)
@@ -364,7 +363,6 @@ async function generateContent(
     const text = await callClaude({
       systemPrompt: SYSTEM_PROMPT_INMAIL,
       userPrompt: prompt2,
-      temperature: 0.4,
       maxTokens: 8000,
     })
     contentResult = parseClaudeJson<ContentResult>(text)

@@ -2,7 +2,6 @@ export async function callClaude(params: {
   systemPrompt?: string
   userPrompt: string
   maxTokens?: number
-  temperature?: number
 }): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY_PIJPLIJN
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY_PIJPLIJN ontbreekt')
@@ -10,7 +9,6 @@ export async function callClaude(params: {
   const body: Record<string, unknown> = {
     model: 'claude-opus-4-7',
     max_tokens: params.maxTokens ?? 8000,
-    temperature: params.temperature ?? 0.4,
     messages: [{ role: 'user', content: params.userPrompt }],
   }
   if (params.systemPrompt) body.system = params.systemPrompt
