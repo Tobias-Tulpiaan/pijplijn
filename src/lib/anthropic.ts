@@ -7,7 +7,7 @@ export async function callClaude(params: {
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY_PIJPLIJN ontbreekt')
 
   const body: Record<string, unknown> = {
-    model: 'claude-opus-4-7',
+    model: 'claude-sonnet-4-6',
     max_tokens: params.maxTokens ?? 8000,
     messages: [{ role: 'user', content: params.userPrompt }],
   }
