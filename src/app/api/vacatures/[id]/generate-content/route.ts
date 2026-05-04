@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 300
 
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
@@ -503,10 +503,12 @@ export async function POST(
     data: { contentStatus: 'PENDING' },
   })
 
-  // Fire-and-forget: niet awaiten zodat response direct terugkomt
-  generateContent(id, scope, session.user.id).catch((e) =>
-    console.error('generateContent uncaught:', e)
-  )
+  await generateContent(id, scope, session.user.id)
 
-  return NextResponse.json({ status: 'pending' })
+  const updated = await prisma.vacature.findUnique({
+    where: { id },
+    select: { contentStatus: true },
+  })
+
+  return NextResponse.json({ status: updated?.contentStatus?.toLowerCase() ?? 'unknown' })
 }

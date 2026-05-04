@@ -95,6 +95,8 @@ export function RecruitmentContentTab({ vacatureId }: Props) {
     } else {
       setRefreshingField(scope)
     }
+    // Toon PENDING state direct
+    setData((prev) => prev ? { ...prev, contentStatus: 'PENDING' } : prev)
 
     try {
       const res = await fetch(`/api/vacatures/${vacatureId}/generate-content`, {
@@ -102,12 +104,12 @@ export function RecruitmentContentTab({ vacatureId }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scope }),
       })
-      if (!res.ok) throw new Error('Generatie starten mislukt')
-
-      // Update status naar pending zodat polling begint
-      setData((prev) => prev ? { ...prev, contentStatus: 'PENDING' } : prev)
+      if (!res.ok) throw new Error('Generatie mislukt')
+      // POST is nu synchroon — na terugkomst herlaad de content
+      await fetchData()
     } catch (e) {
       console.error(e)
+      await fetchData()
     } finally {
       setGenerating(false)
       setRefreshingField(null)
