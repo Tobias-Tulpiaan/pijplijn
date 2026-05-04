@@ -52,6 +52,7 @@ export async function POST(request: Request) {
       salaryMonthMin, salaryMonthMax, salaryYearMin, salaryYearMax,
       bonus, leaseAuto, pensionExtras, feeOpdrachtgever,
       description, highlights, notes, deadline,
+      werkenbijUrl, vacatureTekst,
     } = body
 
     if (!title?.trim())       return NextResponse.json({ error: 'Titel is verplicht' },       { status: 400 })
@@ -82,6 +83,8 @@ export async function POST(request: Request) {
         highlights:      highlights?.trim()  || null,
         notes:           notes?.trim()       || null,
         deadline:        deadline ? new Date(deadline) : null,
+        werkenbijUrl:    werkenbijUrl?.trim() || null,
+        vacatureTekst:   vacatureTekst?.trim() || null,
       },
       include: vacatureInclude,
     })

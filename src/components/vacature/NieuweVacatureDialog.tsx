@@ -60,6 +60,8 @@ export function NieuweVacatureDialog({ companies, users, currentUserId, defaultC
   const [highlights, setHighlights]   = useState('')
   const [deadline, setDeadline]       = useState('')
   const [notes, setNotes]             = useState('')
+  const [werkenbijUrl, setWerkenbijUrl] = useState('')
+  const [vacatureTekst, setVacatureTekst] = useState('')
 
   async function loadContacts(cId: string) {
     if (!cId) { setContacts([]); setContactId(''); return }
@@ -90,6 +92,7 @@ export function NieuweVacatureDialog({ companies, users, currentUserId, defaultC
     setSalaryMonthMin(''); setSalaryMonthMax(''); setSalaryYearMin(''); setSalaryYearMax('')
     setBonus(''); setLeaseAuto(''); setPensionExtras('')
     setFeeOpdrachtgever(''); setDescription(''); setHighlights(''); setDeadline(''); setNotes('')
+    setWerkenbijUrl(''); setVacatureTekst('')
   }
 
   function canAdvance() {
@@ -109,6 +112,8 @@ export function NieuweVacatureDialog({ companies, users, currentUserId, defaultC
           salaryMonthMin, salaryMonthMax, salaryYearMin, salaryYearMax,
           bonus, leaseAuto, pensionExtras, feeOpdrachtgever,
           description, highlights, notes, deadline: deadline || null,
+          werkenbijUrl: werkenbijUrl.trim() || null,
+          vacatureTekst: vacatureTekst.trim() || null,
         }),
       })
       if (!res.ok) {
@@ -116,6 +121,17 @@ export function NieuweVacatureDialog({ companies, users, currentUserId, defaultC
         throw new Error(d.error ?? 'Aanmaken mislukt')
       }
       const vacature = await res.json()
+
+      // Auto-trigger content generatie als bron aanwezig is
+      const hasBron = !!(vacatureTekst.trim() || werkenbijUrl.trim())
+      if (hasBron) {
+        fetch(`/api/vacatures/${vacature.id}/generate-content`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scope: 'all' }),
+        }).catch(() => {})
+      }
+
       setOpen(false); reset()
       if (onCreated) onCreated({ id: vacature.id, title: vacature.title })
       else router.refresh()
@@ -290,6 +306,16 @@ export function NieuweVacatureDialog({ companies, users, currentUserId, defaultC
             {/* Stap 4: Recruitment */}
             {step === 3 && (
               <>
+                <div className="space-y-1.5">
+                  <Label>Werkenbij URL</Label>
+                  <Input type="url" value={werkenbijUrl} onChange={(e) => setWerkenbijUrl(e.target.value)} placeholder="https://werkenbij.bedrijf.nl/..." />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Vacaturetekst (vult URL aan of vervangt deze)</Label>
+                  <textarea value={vacatureTekst} onChange={(e) => setVacatureTekst(e.target.value)} rows={3}
+                    className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs resize-none outline-none focus:border-[#CBAD74]"
+                    placeholder="Plak hier de volledige vacaturetekst..." />
+                </div>
                 <div className="space-y-1.5">
                   <Label>Tarief opdrachtgever (€)</Label>
                   <Input type="number" value={feeOpdrachtgever} onChange={(e) => setFeeOpdrachtgever(e.target.value)} placeholder="Bijv. 5000" />

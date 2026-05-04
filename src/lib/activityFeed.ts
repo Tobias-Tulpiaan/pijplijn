@@ -136,6 +136,17 @@ function humanizeAction(action: string, metadata?: Record<string, unknown>): str
     case 'vacature_create':        return 'Vacature aangemaakt'
     case 'vacature_update':        return 'Vacature bijgewerkt'
     case 'vacature_delete':        return 'Vacature verwijderd'
+    case 'vacature_content_generated': {
+      const scope = metadata?.scope as string | undefined
+      const version = metadata?.version as number | undefined
+      const scopeLabel = scope === 'all' ? 'alles' : scope ?? 'content'
+      return `Content gegenereerd${version ? ` (versie ${version}` : ''}${scope && scope !== 'all' ? `, ${scopeLabel}` : ''}${version ? ')' : ''}`
+    }
+    case 'vacature_content_restored': {
+      const version = metadata?.version as number | undefined
+      return `Content hersteld${version ? ` naar versie ${version}` : ''}`
+    }
+    case 'vacature_content_failed': return 'Contentgeneratie mislukt'
     case 'create_task':            return 'Taak aangemaakt'
     case 'complete_task':          return 'Taak afgevinkt'
     case 'reactivate_task':        return 'Taak heractiveerd'

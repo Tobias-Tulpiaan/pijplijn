@@ -74,6 +74,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         ...(body.highlights       !== undefined && { highlights:       body.highlights || null }),
         ...(body.notes            !== undefined && { notes:            body.notes || null }),
         ...(body.deadline         !== undefined && { deadline:         body.deadline ? new Date(body.deadline) : null }),
+        ...(body.werkenbijUrl     !== undefined && { werkenbijUrl:     body.werkenbijUrl || null }),
+        ...(body.vacatureTekst    !== undefined && { vacatureTekst:    body.vacatureTekst || null }),
+        ...(body.recruiterInput   !== undefined && { recruiterInput:   body.recruiterInput || null }),
       },
       include: vacatureInclude,
     })
